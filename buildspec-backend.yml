@@ -23,22 +23,17 @@ phases:
   
   post_build:
     commands:
-      - echo "Creating deployment package..."
-      - cd ..
-      - mkdir -p deploy
-      - cp -r backend/dist deploy/
-      - cp -r backend/node_modules deploy/
-      - cp backend/package.json deploy/
-      - cp appspec.yml deploy/
-      - cp -r scripts deploy/
-      - cd deploy
-      - zip -r ../backend-deployment.zip .
-      - cd ..
-      - echo "Deployment package created"
+      - echo "Preparing deployment artifacts..."
+      - cd backend
+      - echo "Backend build completed"
 
 artifacts:
   files:
-    - backend-deployment.zip
+    - backend/dist/**/*
+    - backend/node_modules/**/*
+    - backend/package.json
+    - appspec.yml
+    - scripts/**/*
   name: backend-build
 
 cache:

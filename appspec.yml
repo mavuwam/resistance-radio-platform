@@ -2,8 +2,12 @@ version: 0.0
 os: linux
 
 files:
-  - source: /
-    destination: /opt/resistance-radio/backend
+  - source: backend/dist
+    destination: /opt/resistance-radio/backend/dist
+  - source: backend/node_modules
+    destination: /opt/resistance-radio/backend/node_modules
+  - source: backend/package.json
+    destination: /opt/resistance-radio/backend/package.json
 
 hooks:
   BeforeInstall:
