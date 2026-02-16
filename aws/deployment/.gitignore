@@ -1,0 +1,16 @@
+# Generated files
+cloudfront-urls.txt
+deployment-*.log
+*.tmp
+
+# Logs
+logs/
+*.log
+
+# Environment-specific files
+.env.local
+.env.*.local
+
+# Temporary files
+temp/
+tmp/

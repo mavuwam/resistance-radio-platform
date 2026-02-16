@@ -1,0 +1,148 @@
+/* Accessibility Styles */
+
+/* Focus indicators for keyboard navigation */
+*:focus {
+  outline: 3px solid #ff6b35;
+  outline-offset: 2px;
+}
+
+/* Skip to main content link - completely hidden, only visible on keyboard focus */
+.skip-to-main {
+  position: absolute;
+  top: -9999px;
+  left: -9999px;
+  background: #ff6b35;
+  color: white;
+  padding: 8px 16px;
+  text-decoration: none;
+  z-index: 10000;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.skip-to-main:focus {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Focus visible for better keyboard navigation */
+.focus-visible:focus {
+  outline: 3px solid #ff6b35;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  * {
+    border-color: currentColor !important;
+  }
+  
+  button, a {
+    text-decoration: underline;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Ensure sufficient color contrast */
+.btn-primary {
+  background: #ff6b35;
+  color: #ffffff;
+  min-height: 44px; /* WCAG touch target size */
+  min-width: 44px;
+}
+
+.btn-secondary {
+  background: #f7b731;
+  color: #0d0d0d;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Interactive elements should have visible focus */
+button:focus,
+a:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 3px solid #ff6b35;
+  outline-offset: 2px;
+}
+
+/* Ensure links are distinguishable */
+a {
+  text-decoration: underline;
+  text-decoration-skip-ink: auto;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* Form labels should be associated with inputs */
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+/* Error messages should be clearly visible */
+.error-message {
+  color: #d9534f;
+  font-weight: 600;
+  margin-top: 0.25rem;
+  role: alert;
+}
+
+/* Loading states should be announced */
+.loading {
+  role: status;
+  aria-live: polite;
+}
+
+/* Ensure sufficient spacing for touch targets */
+button,
+a.btn,
+input[type="submit"],
+input[type="button"] {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 12px 24px;
+}

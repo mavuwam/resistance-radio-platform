@@ -1,0 +1,170 @@
+/* MULTIMEDIA EXPERIENCE DESIGN THEME */
+/* Focus: Highlight various media formats for storytelling */
+/* Dynamic layouts with graphics and videos */
+
+:root {
+  /* Brand Colors - Cinematic */
+  --color-deep-black: #0d0d0d;
+  --color-burnt-orange: #ff6b35;
+  --color-gold: #f7b731;
+  --color-white: #ffffff;
+  --color-video: #e91e63;
+  --color-audio: #9c27b0;
+  
+  /* Extended Palette - Rich & Deep */
+  --color-gray-50: #fafafa;
+  --color-gray-100: #f5f5f5;
+  --color-gray-200: #e5e5e5;
+  --color-gray-300: #d4d4d4;
+  --color-gray-400: #a3a3a3;
+  --color-gray-500: #737373;
+  --color-gray-600: #525252;
+  --color-gray-700: #404040;
+  --color-gray-800: #262626;
+  --color-gray-900: #171717;
+  
+  /* Semantic Colors */
+  --color-background: #0d0d0d;
+  --color-surface: #1a1a1a;
+  --color-surface-elevated: #262626;
+  --color-border: rgba(255, 255, 255, 0.15);
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #a3a3a3;
+  
+  /* Gradients - Dramatic */
+  --gradient-primary: linear-gradient(135deg, #ff6b35 0%, #f7b731 50%, #e91e63 100%);
+  --gradient-dark: linear-gradient(180deg, #0d0d0d 0%, #000000 100%);
+  --gradient-overlay: linear-gradient(180deg, rgba(13, 13, 13, 0) 0%, rgba(13, 13, 13, 1) 100%);
+  --gradient-video: linear-gradient(135deg, #e91e63 0%, #9c27b0 100%);
+  --gradient-audio: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);
+  
+  /* Shadows - Cinematic */
+  --shadow-sm: 0 2px 8px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 16px -2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 16px 32px -4px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 32px 64px -8px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 40px rgba(255, 107, 53, 0.4);
+  
+  /* Spacing - Cinematic Breathing Room */
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 0.75rem;
+  --spacing-md: 1.25rem;
+  --spacing-lg: 2rem;
+  --spacing-xl: 3rem;
+  --spacing-2xl: 4rem;
+  --spacing-3xl: 6rem;
+  
+  /* Border Radius - Smooth */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
+  --radius-full: 9999px;
+  
+  /* Transitions - Smooth & Cinematic */
+  --transition-fast: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 600ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Media Containers */
+.media-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+}
+
+.media-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--gradient-overlay);
+  opacity: 0;
+  transition: opacity var(--transition-base);
+  z-index: 1;
+}
+
+.media-container:hover::before {
+  opacity: 1;
+}
+
+/* Video Player Styling */
+.video-player {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #000;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Audio Visualizer */
+.audio-player {
+  background: var(--gradient-audio);
+  padding: var(--spacing-xl);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.audio-player::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.1) 50%, 
+    transparent 100%);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Gallery Grid */
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-xl);
+}
+
+.media-grid-item {
+  position: relative;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: transform var(--transition-base);
+}
+
+.media-grid-item:hover {
+  transform: scale(1.05);
+  z-index: 10;
+}
+
+/* Hero Media Section */
+.hero-media {
+  position: relative;
+  height: 80vh;
+  overflow: hidden;
+}
+
+.hero-media::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: var(--gradient-overlay);
+}

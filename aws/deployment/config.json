@@ -1,0 +1,57 @@
+{
+  "aws": {
+    "profile": "Personal_Account_734110488556",
+    "region": "us-east-1"
+  },
+  "naming": {
+    "prefix": "zv-test",
+    "production_bucket": "resistance-radio-website-dev-734110488556",
+    "production_cloudfront": "EYKP4STY3RIHX"
+  },
+  "themes": [
+    {
+      "name": "accessible-responsive",
+      "buildDir": "frontend/dist-magazine-editorial"
+    },
+    {
+      "name": "community-driven",
+      "buildDir": "frontend/dist-card-masonry"
+    },
+    {
+      "name": "engagement-centric",
+      "buildDir": "frontend/dist-fullscreen-sections"
+    },
+    {
+      "name": "informational-hub",
+      "buildDir": "frontend/dist-sidebar-navigation"
+    },
+    {
+      "name": "multimedia-experience",
+      "buildDir": "frontend/dist-split-screen-hero"
+    }
+  ],
+  "cloudfront": {
+    "priceClass": "PriceClass_100",
+    "defaultRootObject": "index.html",
+    "errorPages": [
+      {
+        "errorCode": 404,
+        "responseCode": 200,
+        "responsePage": "/index.html"
+      },
+      {
+        "errorCode": 403,
+        "responseCode": 200,
+        "responsePage": "/index.html"
+      }
+    ]
+  },
+  "costOptimization": {
+    "notes": [
+      "All resources use the same AWS account and region to avoid cross-account/cross-region transfer fees",
+      "CloudFront distributions use PriceClass_100 (cheapest, US/Europe only) for test environments",
+      "S3 buckets use Standard storage class by default (cost-effective for short-term testing)",
+      "All resources are tagged with Environment=test for cost tracking and identification"
+    ]
+  }
+}

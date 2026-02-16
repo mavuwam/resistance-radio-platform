@@ -1,0 +1,23 @@
+{
+  "name": "advocacy-platform",
+  "version": "1.0.0",
+  "description": "Political advocacy platform with petition functionality",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "install:all": "npm install && npm install --workspace=backend && npm install --workspace=frontend",
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "test": "npm run test --workspaces",
+    "test:backend": "npm run test --workspace=backend",
+    "test:frontend": "npm run test --workspace=frontend",
+    "lint": "npm run lint --workspaces",
+    "build": "npm run build --workspaces"
+  },
+  "keywords": ["advocacy", "petition", "political"],
+  "author": "",
+  "license": "MIT"
+}

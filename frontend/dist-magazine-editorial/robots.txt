@@ -1,0 +1,10 @@
+# Resistance Radio - robots.txt
+
+User-agent: *
+Allow: /
+
+# Disallow admin pages
+Disallow: /admin/
+
+# Sitemap
+Sitemap: https://resistanceradio.org/sitemap.xml

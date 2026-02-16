@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resistance Radio - Theme Comparison</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0d0d0d;
+            color: #ffffff;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #ff6b35 0%, #f7b731 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+        }
+
+        .subtitle {
+            color: #a3a3a3;
+            font-size: 1.125rem;
+        }
+
+        .themes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .theme-card {
+            background: #1a1a1a;
+            border: 2px solid #262626;
+            border-radius: 1rem;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .theme-card:hover {
+            border-color: #ff6b35;
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(255, 107, 53, 0.3);
+        }
+
+        .theme-header {
+            padding: 1.5rem;
+            background: #262626;
+            border-bottom: 2px solid #ff6b35;
+        }
+
+        .theme-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .theme-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .theme-description {
+            color: #a3a3a3;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+
+        .theme-preview {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            background: #000;
+            overflow: hidden;
+        }
+
+        .theme-preview iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            pointer-events: none;
+        }
+
+        .theme-footer {
+            padding: 1.5rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff6b35 0%, #f7b731 100%);
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #ff6b35;
+            border: 2px solid #ff6b35;
+        }
+
+        .btn-secondary:hover {
+            background: #ff6b35;
+            color: #ffffff;
+        }
+
+        .features {
+            padding: 1rem 1.5rem;
+            background: #1a1a1a;
+        }
+
+        .features ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .features li {
+            padding: 0.5rem 0;
+            color: #a3a3a3;
+            font-size: 0.875rem;
+        }
+
+        .features li::before {
+            content: '✓';
+            color: #f7b731;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+
+        .instructions {
+            max-width: 800px;
+            margin: 3rem auto;
+            padding: 2rem;
+            background: #1a1a1a;
+            border: 2px solid #262626;
+            border-radius: 1rem;
+        }
+
+        .instructions h2 {
+            color: #ff6b35;
+            margin-bottom: 1rem;
+        }
+
+        .instructions p {
+            color: #a3a3a3;
+            line-height: 1.7;
+            margin-bottom: 1rem;
+        }
+
+        .instructions code {
+            background: #262626;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-family: 'Courier New', monospace;
+            color: #f7b731;
+        }
+
+        @media (max-width: 768px) {
+            .themes-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎨 Resistance Radio Theme Comparison</h1>
+        <p class="subtitle">Compare 5 different design approaches for your community radio platform</p>
+    </div>
+
+    <div class="themes-grid">
+        <!-- Theme 1: Engagement-Centric -->
+        <div class="theme-card">
+            <div class="theme-header">
+                <div class="theme-icon">🎯</div>
+                <h3 class="theme-title">Engagement-Centric</h3>
+                <p class="theme-description">Vibrant, interactive platform encouraging user participation</p>
+            </div>
+            <div class="features">
+                <ul>
+                    <li>Bold animations and hover effects</li>
+                    <li>Bright colors with cyan accents</li>
+                    <li>Perfect for live chats and polls</li>
+                    <li>Energetic and dynamic feel</li>
+                </ul>
+            </div>
+            <div class="theme-footer">
+                <a href="frontend/dist-engagement-centric/index.html" class="btn btn-primary" target="_blank">View Full Theme</a>
+            </div>
+        </div>
+
+        <!-- Theme 2: Informational Hub -->
+        <div class="theme-card">
+            <div class="theme-header">
+                <div class="theme-icon">📰</div>
+                <h3 class="theme-title">Informational Hub</h3>
+                <p class="theme-description">Clean, minimalist layout focused on readability</p>
+            </div>
+            <div class="features">
+                <ul>
+                    <li>Light background for clarity</li>
+                    <li>Serif fonts for body text</li>
+                    <li>Minimal effects, maximum readability</li>
+                    <li>Professional and organized</li>
+                </ul>
+            </div>
+            <div class="theme-footer">
+                <a href="frontend/dist-informational-hub/index.html" class="btn btn-primary" target="_blank">View Full Theme</a>
+            </div>
+        </div>
+
+        <!-- Theme 3: Multimedia Experience -->
+        <div class="theme-card">
+            <div class="theme-header">
+                <div class="theme-icon">🎬</div>
+                <h3 class="theme-title">Multimedia Experience</h3>
+                <p class="theme-description">Cinematic design highlighting media formats</p>
+            </div>
+            <div class="features">
+                <ul>
+                    <li>Dark cinematic theme</li>
+                    <li>Dramatic gradients and overlays</li>
+                    <li>Perfect for video/audio content</li>
+                    <li>Immersive storytelling</li>
+                </ul>
+            </div>
+            <div class="theme-footer">
+                <a href="frontend/dist-multimedia-experience/index.html" class="btn btn-primary" target="_blank">View Full Theme</a>
+            </div>
+        </div>
+
+        <!-- Theme 4: Community-Driven -->
+        <div class="theme-card">
+            <div class="theme-header">
+                <div class="theme-icon">🤝</div>
+                <h3 class="theme-title">Community-Driven</h3>
+                <p class="theme-description">Warm, welcoming design showcasing community voices</p>
+            </div>
+            <div class="features">
+                <ul>
+                    <li>Warm earthy color palette</li>
+                    <li>Friendly serif fonts</li>
+                    <li>Perfect for user stories</li>
+                    <li>Grassroots aesthetic</li>
+                </ul>
+            </div>
+            <div class="theme-footer">
+                <a href="frontend/dist-community-driven/index.html" class="btn btn-primary" target="_blank">View Full Theme</a>
+            </div>
+        </div>
+
+        <!-- Theme 5: Accessible & Responsive -->
+        <div class="theme-card">
+            <div class="theme-header">
+                <div class="theme-icon">♿</div>
+                <h3 class="theme-title">Accessible & Responsive</h3>
+                <p class="theme-description">High contrast, mobile-first design for all users</p>
+            </div>
+            <div class="features">
+                <ul>
+                    <li>WCAG AAA compliant</li>
+                    <li>Large touch-friendly buttons</li>
+                    <li>Clear focus indicators</li>
+                    <li>Maximum reach and inclusion</li>
+                </ul>
+            </div>
+            <div class="theme-footer">
+                <a href="frontend/dist-accessible-responsive/index.html" class="btn btn-primary" target="_blank">View Full Theme</a>
+            </div>
+        </div>
+
+        <!-- Theme 6: Default (Current) -->
+        <div class="theme-card">
+            <div class="theme-header">
+                <div class="theme-icon">⚡</div>
+                <h3 class="theme-title">Default (Compact)</h3>
+                <p class="theme-description">Your current design with compact spacing</p>
+            </div>
+            <div class="features">
+                <ul>
+                    <li>Modern dark theme</li>
+                    <li>Compact spacing</li>
+                    <li>Orange and gold accents</li>
+                    <li>Currently live on your site</li>
+                </ul>
+            </div>
+            <div class="theme-footer">
+                <a href="frontend/dist-default/index.html" class="btn btn-primary" target="_blank">View Full Theme</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="instructions">
+        <h2>📋 How to Use This Comparison</h2>
+        <p>1. Click "View Full Theme" on any card to open that theme in a new tab</p>
+        <p>2. Navigate through different pages to see how each theme handles various content</p>
+        <p>3. Test on mobile by resizing your browser or opening on your phone</p>
+        <p>4. Take notes on what you like/dislike about each theme</p>
+        <p><strong>Note:</strong> These are local previews only. Your live website at <code>https://dxbqjcig99tjb.cloudfront.net</code> remains unchanged with the default theme.</p>
+    </div>
+</body>
+</html>

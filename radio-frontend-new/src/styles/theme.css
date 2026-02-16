@@ -1,0 +1,258 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  
+  /* Resistance Radio Color Scheme */
+  --deep-black: #0a0a0a;
+  --burnt-orange: #d4633f;
+  --gold: #d4af37;
+  --matte-white: #f5f5f5;
+  
+  --background: var(--deep-black);
+  --foreground: var(--matte-white);
+  --card: #1a1a1a;
+  --card-foreground: var(--matte-white);
+  --popover: #1a1a1a;
+  --popover-foreground: var(--matte-white);
+  --primary: var(--burnt-orange);
+  --primary-foreground: var(--matte-white);
+  --secondary: var(--gold);
+  --secondary-foreground: var(--deep-black);
+  --muted: #2a2a2a;
+  --muted-foreground: #999999;
+  --accent: var(--burnt-orange);
+  --accent-foreground: var(--matte-white);
+  --destructive: #d4183d;
+  --destructive-foreground: #ffffff;
+  --border: rgba(245, 245, 245, 0.1);
+  --input: transparent;
+  --input-background: #1a1a1a;
+  --switch-background: #2a2a2a;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: var(--burnt-orange);
+  --chart-1: var(--burnt-orange);
+  --chart-2: var(--gold);
+  --chart-3: #888888;
+  --chart-4: #666666;
+  --chart-5: #444444;
+  --radius: 0.5rem;
+  --sidebar: #1a1a1a;
+  --sidebar-foreground: var(--matte-white);
+  --sidebar-primary: var(--burnt-orange);
+  --sidebar-primary-foreground: var(--matte-white);
+  --sidebar-accent: #2a2a2a;
+  --sidebar-accent-foreground: var(--matte-white);
+  --sidebar-border: rgba(245, 245, 245, 0.1);
+  --sidebar-ring: var(--burnt-orange);
+}
+
+.dark {
+  --background: var(--deep-black);
+  --foreground: var(--matte-white);
+  --card: #1a1a1a;
+  --card-foreground: var(--matte-white);
+  --popover: #1a1a1a;
+  --popover-foreground: var(--matte-white);
+  --primary: var(--burnt-orange);
+  --primary-foreground: var(--matte-white);
+  --secondary: var(--gold);
+  --secondary-foreground: var(--deep-black);
+  --muted: #2a2a2a;
+  --muted-foreground: #999999;
+  --accent: var(--burnt-orange);
+  --accent-foreground: var(--matte-white);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: rgba(245, 245, 245, 0.1);
+  --input: #1a1a1a;
+  --ring: var(--burnt-orange);
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --chart-1: var(--burnt-orange);
+  --chart-2: var(--gold);
+  --chart-3: #888888;
+  --chart-4: #666666;
+  --chart-5: #444444;
+  --sidebar: #1a1a1a;
+  --sidebar-foreground: var(--matte-white);
+  --sidebar-primary: var(--burnt-orange);
+  --sidebar-primary-foreground: var(--matte-white);
+  --sidebar-accent: #2a2a2a;
+  --sidebar-accent-foreground: var(--matte-white);
+  --sidebar-border: rgba(245, 245, 245, 0.1);
+  --sidebar-ring: var(--burnt-orange);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  
+  /* Custom Resistance Radio Colors */
+  --color-deep-black: var(--deep-black);
+  --color-burnt-orange: var(--burnt-orange);
+  --color-gold: var(--gold);
+  --color-matte-white: var(--matte-white);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /**
+  * Default typography styles for HTML elements (h1-h4, p, label, button, input).
+  * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
+  */
+
+  html {
+    font-size: var(--font-size);
+  }
+
+  h1 {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  h2 {
+    font-size: var(--text-xl);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  h3 {
+    font-size: var(--text-lg);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  h4 {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  label {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  button {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  input {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-normal);
+    line-height: 1.5;
+  }
+  
+  /* Gold shimmer and glow effects */
+  @keyframes gold-shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+
+  .gold-shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(212, 175, 55, 0) 0%,
+      rgba(212, 175, 55, 0.3) 50%,
+      rgba(212, 175, 55, 0) 100%
+    );
+    background-size: 1000px 100%;
+    animation: gold-shimmer 3s infinite;
+  }
+
+  .gold-glow {
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+  }
+
+  .gold-glow-hover:hover {
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
+    transition: box-shadow 0.3s ease;
+  }
+
+  .text-gold-gradient {
+    background: linear-gradient(135deg, #d4af37 0%, #d4633f 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Gold border animation */
+  @keyframes gold-border-spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  .gold-border-spin {
+    position: relative;
+  }
+
+  .gold-border-spin::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    padding: 2px;
+    background: linear-gradient(135deg, #d4af37, #d4633f, #d4af37);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: gold-border-spin 3s linear infinite;
+  }
+}
