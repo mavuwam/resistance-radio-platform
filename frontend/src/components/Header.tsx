@@ -49,7 +49,7 @@ const Header: React.FC = () => {
             className={`nav-wrapper ${mobileMenuOpen ? 'open' : ''}`}
             id="main-navigation"
           >
-            <Navigation />
+            <Navigation onLinkClick={() => setMobileMenuOpen(false)} />
           </div>
         </div>
       </div>
