@@ -1,0 +1,332 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CI/CD Pipeline for Resistance Radio Platform'
+
+Parameters:
+  GitHubRepo:
+    Type: String
+    Description: GitHub repository name (e.g., username/repo-name)
+    
+  GitHubBranch:
+    Type: String
+    Default: main
+    Description: GitHub branch to track
+    
+  GitHubToken:
+    Type: String
+    NoEcho: true
+    Description: GitHub personal access token for CodePipeline
+    
+  EC2InstanceId:
+    Type: String
+    Default: i-07f7e8accc4b07682
+    Description: EC2 instance ID for backend deployment
+    
+  S3BucketFrontend:
+    Type: String
+    Default: resistance-radio-website-dev-734110488556
+    Description: S3 bucket for frontend hosting
+    
+  CloudFrontDistributionId:
+    Type: String
+    Default: EYKP4STY3RIHX
+    Description: CloudFront distribution ID
+    
+  ViteApiUrl:
+    Type: String
+    Default: https://api.resistanceradiostation.org/api
+    Description: Backend API URL for frontend build
+
+Resources:
+  # S3 Bucket for Pipeline Artifacts
+  ArtifactBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'resistance-radio-pipeline-artifacts-${AWS::AccountId}'
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldArtifacts
+            Status: Enabled
+            ExpirationInDays: 30
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # CodeBuild Service Role
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ResistanceRadioCodeBuildRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-09'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/CloudFrontFullAccess
+      Policies:
+        - PolicyName: CodeBuildPolicy
+          PolicyDocument:
+            Version: '2012-10-09'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*'
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource:
+                  - !Sub '${ArtifactBucket.Arn}/*'
+
+  # CodePipeline Service Role
+  CodePipelineServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ResistanceRadioCodePipelineRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-09'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CodePipelinePolicy
+          PolicyDocument:
+            Version: '2012-10-09'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:GetBucketLocation
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt ArtifactBucket.Arn
+                  - !Sub '${ArtifactBucket.Arn}/*'
+              - Effect: Allow
+                Action:
+                  - codebuild:BatchGetBuilds
+                  - codebuild:StartBuild
+                Resource:
+                  - !GetAtt FrontendBuildProject.Arn
+                  - !GetAtt BackendBuildProject.Arn
+              - Effect: Allow
+                Action:
+                  - codedeploy:CreateDeployment
+                  - codedeploy:GetApplication
+                  - codedeploy:GetApplicationRevision
+                  - codedeploy:GetDeployment
+                  - codedeploy:GetDeploymentConfig
+                  - codedeploy:RegisterApplicationRevision
+                Resource: '*'
+
+  # Frontend CodeBuild Project
+  FrontendBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: ResistanceRadio-Frontend-Build
+      Description: Build frontend React application
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:7.0
+        EnvironmentVariables:
+          - Name: VITE_API_URL
+            Value: !Ref ViteApiUrl
+          - Name: S3_BUCKET
+            Value: !Ref S3BucketFrontend
+          - Name: CLOUDFRONT_DISTRIBUTION_ID
+            Value: !Ref CloudFrontDistributionId
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec-frontend.yml
+      TimeoutInMinutes: 15
+      Cache:
+        Type: S3
+        Location: !Sub '${ArtifactBucket}/build-cache'
+
+  # Backend CodeBuild Project
+  BackendBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: ResistanceRadio-Backend-Build
+      Description: Build backend Node.js application
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:7.0
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec-backend.yml
+      TimeoutInMinutes: 15
+      Cache:
+        Type: S3
+        Location: !Sub '${ArtifactBucket}/build-cache'
+
+  # CodeDeploy Application
+  CodeDeployApplication:
+    Type: AWS::CodeDeploy::Application
+    Properties:
+      ApplicationName: ResistanceRadio-Backend
+      ComputePlatform: Server
+
+  # CodeDeploy Deployment Group
+  DeploymentGroup:
+    Type: AWS::CodeDeploy::DeploymentGroup
+    Properties:
+      ApplicationName: !Ref CodeDeployApplication
+      DeploymentGroupName: ResistanceRadio-Backend-DeploymentGroup
+      ServiceRoleArn: !GetAtt CodeDeployServiceRole.Arn
+      Ec2TagFilters:
+        - Type: KEY_AND_VALUE
+          Key: Name
+          Value: resistance-radio-backend
+      DeploymentConfigName: CodeDeployDefault.OneAtATime
+      AutoRollbackConfiguration:
+        Enabled: true
+        Events:
+          - DEPLOYMENT_FAILURE
+
+  # CodeDeploy Service Role
+  CodeDeployServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ResistanceRadioCodeDeployRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-09'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codedeploy.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSCodeDeployRole
+
+  # Main CI/CD Pipeline
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: ResistanceRadio-Pipeline
+      RoleArn: !GetAtt CodePipelineServiceRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucket
+      Stages:
+        # Source Stage
+        - Name: Source
+          Actions:
+            - Name: SourceAction
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Provider: GitHub
+                Version: '1'
+              Configuration:
+                Owner: !Select [0, !Split ['/', !Ref GitHubRepo]]
+                Repo: !Select [1, !Split ['/', !Ref GitHubRepo]]
+                Branch: !Ref GitHubBranch
+                OAuthToken: !Ref GitHubToken
+                PollForSourceChanges: false
+              OutputArtifacts:
+                - Name: SourceOutput
+
+        # Build Stage (Parallel)
+        - Name: Build
+          Actions:
+            - Name: BuildFrontend
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref FrontendBuildProject
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: FrontendBuildOutput
+              RunOrder: 1
+            
+            - Name: BuildBackend
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref BackendBuildProject
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: BackendBuildOutput
+              RunOrder: 1
+
+        # Deploy Stage
+        - Name: Deploy
+          Actions:
+            - Name: DeployBackend
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CodeDeploy
+                Version: '1'
+              Configuration:
+                ApplicationName: !Ref CodeDeployApplication
+                DeploymentGroupName: !Ref DeploymentGroup
+              InputArtifacts:
+                - Name: BackendBuildOutput
+              RunOrder: 1
+
+  # GitHub Webhook
+  PipelineWebhook:
+    Type: AWS::CodePipeline::Webhook
+    Properties:
+      Name: ResistanceRadio-GitHub-Webhook
+      Authentication: GITHUB_HMAC
+      AuthenticationConfiguration:
+        SecretToken: !Ref GitHubToken
+      Filters:
+        - JsonPath: $.ref
+          MatchEquals: !Sub 'refs/heads/${GitHubBranch}'
+      TargetPipeline: !Ref Pipeline
+      TargetAction: SourceAction
+      TargetPipelineVersion: !GetAtt Pipeline.Version
+      RegisterWithThirdParty: true
+
+Outputs:
+  PipelineName:
+    Description: Name of the CodePipeline
+    Value: !Ref Pipeline
+    
+  PipelineUrl:
+    Description: URL to the CodePipeline console
+    Value: !Sub 'https://console.aws.amazon.com/codesuite/codepipeline/pipelines/${Pipeline}/view'
+    
+  ArtifactBucketName:
+    Description: S3 bucket for pipeline artifacts
+    Value: !Ref ArtifactBucket
+    
+  FrontendBuildProjectName:
+    Description: Frontend CodeBuild project name
+    Value: !Ref FrontendBuildProject
+    
+  BackendBuildProjectName:
+    Description: Backend CodeBuild project name
+    Value: !Ref BackendBuildProject

@@ -1,0 +1,44 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 18
+    commands:
+      - echo "Installing backend dependencies..."
+      - cd backend
+      - npm ci --production
+  
+  pre_build:
+    commands:
+      - echo "Running pre-build checks..."
+      - echo "Node version:" && node --version
+      - echo "NPM version:" && npm --version
+  
+  build:
+    commands:
+      - echo "Building backend application..."
+      - npm run build
+      - echo "Build completed successfully"
+  
+  post_build:
+    commands:
+      - echo "Creating deployment package..."
+      - cd ..
+      - mkdir -p deploy
+      - cp -r backend/dist deploy/
+      - cp -r backend/node_modules deploy/
+      - cp backend/package.json deploy/
+      - cd deploy
+      - zip -r ../backend-deployment.zip .
+      - cd ..
+      - echo "Deployment package created"
+
+artifacts:
+  files:
+    - backend-deployment.zip
+  name: backend-build
+
+cache:
+  paths:
+    - 'backend/node_modules/**/*'
