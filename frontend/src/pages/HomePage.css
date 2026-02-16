@@ -426,6 +426,8 @@
   gap: var(--spacing-md);
   justify-content: center;
   flex-wrap: wrap;
+  position: relative;
+  z-index: 2;
 }
 
 .cta .btn-secondary {
