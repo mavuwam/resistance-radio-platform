@@ -24,7 +24,6 @@ phases:
   post_build:
     commands:
       - echo "Preparing deployment artifacts..."
-      - cd backend
       - echo "Backend build completed"
 
 artifacts:
