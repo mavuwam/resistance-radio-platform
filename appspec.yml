@@ -7,7 +7,7 @@ files:
   - source: backend/node_modules
     destination: /opt/resistance-radio/backend/node_modules
   - source: backend/package.json
-    destination: /opt/resistance-radio/backend/package.json
+    destination: /opt/resistance-radio/backend
 
 hooks:
   BeforeInstall:
