@@ -15,10 +15,12 @@ if [ -d "/opt/resistance-radio/backend" ]; then
     timestamp=$(date +%Y%m%d_%H%M%S)
     sudo mkdir -p /opt/resistance-radio/backups
     sudo cp -r /opt/resistance-radio/backend "/opt/resistance-radio/backups/backend_${timestamp}"
+    sudo chown -R ec2-user:ec2-user /opt/resistance-radio/backups
     
-    # Keep only last 5 backups
+    # Keep only last 5 backups (use sudo for deletion to avoid permission issues)
+    echo "Cleaning up old backups..."
     cd /opt/resistance-radio/backups
-    ls -t | tail -n +6 | xargs -r rm -rf
+    sudo ls -t | tail -n +6 | xargs -r sudo rm -rf
 fi
 
 echo "Before install completed successfully"
