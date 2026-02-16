@@ -29,6 +29,8 @@ phases:
       - cp -r backend/dist deploy/
       - cp -r backend/node_modules deploy/
       - cp backend/package.json deploy/
+      - cp appspec.yml deploy/
+      - cp -r scripts deploy/
       - cd deploy
       - zip -r ../backend-deployment.zip .
       - cd ..
