@@ -212,9 +212,9 @@ const HomePage: React.FC = () => {
           <h2>Get Involved</h2>
           <p>Your voice matters. Join us in building a more just and informed society.</p>
           <div className="cta-buttons">
-            <Link to="/get-involved" className="btn btn-primary">Submit a Story</Link>
-            <Link to="/get-involved" className="btn btn-secondary">Volunteer</Link>
-            <Link to="/get-involved" className="btn btn-secondary">Become a Contributor</Link>
+            <Link to="/get-involved#story" className="btn btn-primary">Submit a Story</Link>
+            <Link to="/get-involved#volunteer" className="btn btn-secondary">Volunteer</Link>
+            <Link to="/get-involved#contributor" className="btn btn-secondary">Become a Contributor</Link>
           </div>
         </div>
       </section>

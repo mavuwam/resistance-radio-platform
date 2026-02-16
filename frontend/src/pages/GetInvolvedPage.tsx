@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import SEO from '../components/SEO';
 import './GetInvolvedPage.css';
 
@@ -20,6 +21,7 @@ interface FormData {
 }
 
 const GetInvolvedPage: React.FC = () => {
+  const location = useLocation();
   const [activeForm, setActiveForm] = useState<FormType>('none');
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -30,6 +32,16 @@ const GetInvolvedPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState('');
+
+  // Handle hash navigation
+  useEffect(() => {
+    const hash = location.hash.replace('#', '') as FormType;
+    if (hash === 'story' || hash === 'volunteer' || hash === 'contributor') {
+      setActiveForm(hash);
+      // Scroll to top when opening modal
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [location.hash]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({
