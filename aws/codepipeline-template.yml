@@ -217,7 +217,7 @@ Resources:
               Service: codedeploy.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AWSCodeDeployRole
+        - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole
 
   # Main CI/CD Pipeline
   Pipeline:
