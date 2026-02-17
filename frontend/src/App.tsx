@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { lazy, Suspense } from 'react';
+import { lazy } from 'react';
 import { AudioPlayerProvider } from './contexts/AudioPlayerContext';
 import { AuthProvider } from './contexts/AuthContext';
 import PageLayout from './components/PageLayout';
@@ -7,20 +7,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/AdminLayout';
 import GlobalRadioPlayer from './components/GlobalRadioPlayer';
 import './App.css';
-
-// Loading component
-const LoadingFallback = () => (
-  <div style={{ 
-    display: 'flex', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    minHeight: '60vh',
-    fontSize: '1.2rem',
-    color: '#666'
-  }}>
-    Loading...
-  </div>
-);
 
 // Lazy load page components for code splitting
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -55,82 +41,80 @@ function App() {
       <AudioPlayerProvider>
         <Router>
           <div className="App">
-            <Suspense fallback={<PageLayout><LoadingFallback /></PageLayout>}>
-              <Routes>
-                {/* Public routes */}
-                <Route path="/" element={<PageLayout><HomePage /></PageLayout>} />
-                <Route path="/about" element={<PageLayout><AboutPage /></PageLayout>} />
-                <Route path="/shows" element={<PageLayout><ShowsPage /></PageLayout>} />
-                <Route path="/shows/:slug" element={<PageLayout><ShowDetailPage /></PageLayout>} />
-                <Route path="/listen" element={<PageLayout><ListenPage /></PageLayout>} />
-                <Route path="/news" element={<PageLayout><NewsPage /></PageLayout>} />
-                <Route path="/news/:slug" element={<PageLayout><ArticlePage /></PageLayout>} />
-                <Route path="/events" element={<PageLayout><EventsPage /></PageLayout>} />
-                <Route path="/get-involved" element={<PageLayout><GetInvolvedPage /></PageLayout>} />
-                <Route path="/resources" element={<PageLayout><ResourcesPage /></PageLayout>} />
-                <Route path="/contact" element={<PageLayout><ContactPage /></PageLayout>} />
-                <Route path="/privacy-policy" element={<PageLayout><PrivacyPolicyPage /></PageLayout>} />
-                <Route path="/terms-of-use" element={<PageLayout><TermsOfUsePage /></PageLayout>} />
-                <Route path="/cookie-policy" element={<PageLayout><CookiePolicyPage /></PageLayout>} />
-                <Route path="/ethical-principles" element={<PageLayout><EthicalPrinciplesPage /></PageLayout>} />
-                <Route path="/safeguarding" element={<PageLayout><SafeguardingPage /></PageLayout>} />
-                <Route path="/editorial-independence" element={<PageLayout><EditorialIndependencePage /></PageLayout>} />
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<PageLayout><HomePage /></PageLayout>} />
+              <Route path="/about" element={<PageLayout><AboutPage /></PageLayout>} />
+              <Route path="/shows" element={<PageLayout><ShowsPage /></PageLayout>} />
+              <Route path="/shows/:slug" element={<PageLayout><ShowDetailPage /></PageLayout>} />
+              <Route path="/listen" element={<PageLayout><ListenPage /></PageLayout>} />
+              <Route path="/news" element={<PageLayout><NewsPage /></PageLayout>} />
+              <Route path="/news/:slug" element={<PageLayout><ArticlePage /></PageLayout>} />
+              <Route path="/events" element={<PageLayout><EventsPage /></PageLayout>} />
+              <Route path="/get-involved" element={<PageLayout><GetInvolvedPage /></PageLayout>} />
+              <Route path="/resources" element={<PageLayout><ResourcesPage /></PageLayout>} />
+              <Route path="/contact" element={<PageLayout><ContactPage /></PageLayout>} />
+              <Route path="/privacy-policy" element={<PageLayout><PrivacyPolicyPage /></PageLayout>} />
+              <Route path="/terms-of-use" element={<PageLayout><TermsOfUsePage /></PageLayout>} />
+              <Route path="/cookie-policy" element={<PageLayout><CookiePolicyPage /></PageLayout>} />
+              <Route path="/ethical-principles" element={<PageLayout><EthicalPrinciplesPage /></PageLayout>} />
+              <Route path="/safeguarding" element={<PageLayout><SafeguardingPage /></PageLayout>} />
+              <Route path="/editorial-independence" element={<PageLayout><EditorialIndependencePage /></PageLayout>} />
 
-                {/* Admin login (no layout) */}
-                <Route path="/admin/login" element={<PageLayout showHeader={false} showFooter={false} showAudioPlayer={false}><AdminLoginPage /></PageLayout>} />
+              {/* Admin login (no layout) */}
+              <Route path="/admin/login" element={<PageLayout showHeader={false} showFooter={false} showAudioPlayer={false}><AdminLoginPage /></PageLayout>} />
 
-                {/* Protected admin routes */}
-                <Route path="/admin/dashboard" element={
-                  <ProtectedRoute>
-                    <AdminLayout>
-                      <AdminDashboardPage />
-                    </AdminLayout>
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/shows" element={
-                  <ProtectedRoute>
-                    <AdminLayout>
-                      <AdminShowsPage />
-                    </AdminLayout>
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/submissions" element={
-                  <ProtectedRoute>
-                    <AdminLayout>
-                      <AdminSubmissionsPage />
-                    </AdminLayout>
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/articles" element={
-                  <ProtectedRoute>
-                    <AdminLayout>
-                      <AdminArticlesPage />
-                    </AdminLayout>
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/events" element={
-                  <ProtectedRoute>
-                    <AdminLayout>
-                      <AdminEventsPage />
-                    </AdminLayout>
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/resources" element={
-                  <ProtectedRoute>
-                    <AdminLayout>
-                      <AdminResourcesPage />
-                    </AdminLayout>
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/episodes" element={
-                  <ProtectedRoute>
-                    <AdminLayout>
-                      <AdminEpisodesPage />
-                    </AdminLayout>
-                  </ProtectedRoute>
-                } />
-              </Routes>
-            </Suspense>
+              {/* Protected admin routes */}
+              <Route path="/admin/dashboard" element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <AdminDashboardPage />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/shows" element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <AdminShowsPage />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/submissions" element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <AdminSubmissionsPage />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/articles" element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <AdminArticlesPage />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/events" element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <AdminEventsPage />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/resources" element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <AdminResourcesPage />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/episodes" element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <AdminEpisodesPage />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } />
+            </Routes>
             <GlobalRadioPlayer />
           </div>
         </Router>
