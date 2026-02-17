@@ -5,12 +5,17 @@
 .get-involved-page h1 {
   margin-bottom: 1rem;
   color: var(--color-burnt-orange);
+  text-align: center;
 }
 
 .get-involved-page .intro {
   margin-bottom: 3rem;
   color: var(--color-gray-light);
   font-size: 1.1rem;
+  text-align: center;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .involvement-options {

@@ -5,12 +5,17 @@
 .resources-page h1 {
   margin-bottom: 1rem;
   color: var(--color-burnt-orange);
+  text-align: center;
 }
 
 .resources-page .intro {
   margin-bottom: 2rem;
   color: var(--color-gray-light);
   font-size: 1.1rem;
+  text-align: center;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .resources-controls {
@@ -19,6 +24,7 @@
 
 .search-box {
   margin-bottom: 1.5rem;
+  text-align: center;
 }
 
 .search-input {

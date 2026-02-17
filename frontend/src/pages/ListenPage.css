@@ -5,6 +5,7 @@
 .listen-page h1 {
   margin-bottom: 2rem;
   color: var(--color-burnt-orange);
+  text-align: center;
 }
 
 .live-player {
@@ -97,11 +98,13 @@
 .on-demand h2 {
   margin-bottom: 1rem;
   color: var(--color-burnt-orange);
+  text-align: center;
 }
 
 .on-demand .intro {
   margin-bottom: 2rem;
   color: var(--color-gray-light);
+  text-align: center;
 }
 
 .controls {
@@ -110,6 +113,7 @@
 
 .search-box {
   margin-bottom: 1.5rem;
+  text-align: center;
 }
 
 .search-input {
@@ -137,6 +141,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+  justify-content: center;
 }
 
 .filter-btn {
