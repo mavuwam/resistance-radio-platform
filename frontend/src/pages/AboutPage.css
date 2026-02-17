@@ -11,6 +11,10 @@
   margin-bottom: 4rem;
 }
 
+.about-page .mission {
+  background: transparent;
+}
+
 .about-page h2 {
   color: var(--color-gold);
   margin-bottom: 1.5rem;
