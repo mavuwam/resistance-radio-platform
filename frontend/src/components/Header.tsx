@@ -5,6 +5,7 @@ import './Header.css';
 
 const Header: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isPlayerOpen, setIsPlayerOpen] = useState(false);
   const location = useLocation();
   const isLive = false; // Will be connected to live status API
 
@@ -67,7 +68,31 @@ const Header: React.FC = () => {
                 {item.name}
               </Link>
             ))}
+            
+            {/* Radio Player Button */}
+            <button
+              onClick={() => setIsPlayerOpen(!isPlayerOpen)}
+              className="radio-player-btn"
+              aria-label={isPlayerOpen ? 'Close radio player' : 'Open radio player'}
+            >
+              <Radio className="w-4 h-4" />
+              <span>Listen Live</span>
+            </button>
           </nav>
+
+          {/* Radio Player Dropdown */}
+          {isPlayerOpen && (
+            <div className="radio-player-dropdown">
+              <iframe 
+                width="100%" 
+                height="80" 
+                src="https://s6.citrus3.com/AudioPlayer/resistanceradiostation?mount=&" 
+                style={{ border: 0 }}
+                title="Resistance Radio Live Player"
+                allow="autoplay"
+              />
+            </div>
+          )}
 
           {/* Mobile Menu Button */}
           <button

@@ -6,7 +6,6 @@ import { SecurityProvider } from './contexts/SecurityContext';
 import PageLayout from './components/PageLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/AdminLayout';
-import GlobalRadioPlayer from './components/GlobalRadioPlayer';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingFallback from './components/LoadingFallback';
 import './App.css';
@@ -134,7 +133,6 @@ function App() {
               } />
             </Routes>
                 </Suspense>
-                <GlobalRadioPlayer />
               </div>
             </Router>
           </AudioPlayerProvider>

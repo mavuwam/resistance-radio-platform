@@ -236,3 +236,63 @@
     font-size: 0.75rem;
   }
 }
+
+/* Radio Player Button in Menu Bar */
+.radio-player-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 107, 53, 0.1);
+  border: 1px solid rgba(255, 107, 53, 0.3);
+  border-radius: var(--radius-md);
+  color: var(--color-white);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.radio-player-btn:hover {
+  background: rgba(255, 107, 53, 0.2);
+  border-color: rgba(255, 107, 53, 0.5);
+  transform: translateY(-1px);
+}
+
+.radio-player-btn:active {
+  transform: translateY(0);
+}
+
+/* Radio Player Dropdown */
+.radio-player-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  width: 300px;
+  background: rgba(26, 26, 26, 0.98);
+  border: 1px solid rgba(255, 107, 53, 0.3);
+  border-radius: var(--radius-md);
+  padding: 0.5rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(15px);
+  z-index: 1001;
+}
+
+.radio-player-dropdown iframe {
+  display: block;
+  width: 100%;
+  border-radius: var(--radius-sm);
+  background: transparent;
+}
+
+@media (max-width: 1024px) {
+  .radio-player-btn {
+    display: none;
+  }
+  
+  .radio-player-dropdown {
+    display: none;
+  }
+}
