@@ -65,7 +65,6 @@ Globals:
         JWT_SECRET: !Ref JWTSecret
         FRONTEND_URL: !Ref FrontendURL
         AWS_S3_BUCKET: !Ref S3BucketName
-        AWS_REGION: us-east-1
     Tracing: Active
     Tags:
       Environment: !Ref Environment
@@ -75,7 +74,7 @@ Globals:
     Cors:
       AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
       AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-CSRF-Token'"
-      AllowOrigin: "'*'"
+      AllowOrigin: !Sub "'${FrontendURL}'"
       AllowCredentials: true
     Auth:
       ApiKeyRequired: false
@@ -91,7 +90,7 @@ Resources:
       Cors:
         AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-CSRF-Token'"
-        AllowOrigin: "'*'"
+        AllowOrigin: !Sub "'${FrontendURL}'"
         AllowCredentials: true
       DefinitionBody:
         swagger: '2.0'
@@ -120,7 +119,6 @@ Resources:
       Description: Main API handler for Resistance Radio
       Timeout: 30
       MemorySize: 1024
-      ReservedConcurrentExecutions: 10
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSXRayDaemonWriteAccess
