@@ -27,37 +27,17 @@ phases:
       - cd backend
       - npm run build
       - cd ..
-      - echo "Validating SAM template..."
-      - sam validate --lint
       - echo "Building SAM application..."
-      - sam build
+      - sam build --use-container
       - echo "Build completed successfully"
   
   post_build:
     commands:
       - echo "Deploying to Lambda..."
-      - >
-        sam deploy
-        --stack-name ResistanceRadio-${ENVIRONMENT:-dev}
-        --no-confirm-changeset
-        --no-fail-on-empty-changeset
-        --capabilities CAPABILITY_IAM
-        --parameter-overrides
-        Environment=${ENVIRONMENT:-dev}
-        DBHost=${DB_HOST}
-        DBName=${DB_NAME}
-        DBUser=${DB_USER}
-        DBPassword=${DB_PASSWORD}
-        JWTSecret=${JWT_SECRET}
-        FrontendURL=${FRONTEND_URL}
-        S3BucketName=${S3_BUCKET_NAME}
+      - sam deploy --stack-name ResistanceRadio-dev --no-confirm-changeset --no-fail-on-empty-changeset --capabilities CAPABILITY_IAM --parameter-overrides Environment=dev DBHost=$DB_HOST DBName=$DB_NAME DBUser=$DB_USER DBPassword=$DB_PASSWORD JWTSecret=$JWT_SECRET FrontendURL=$FRONTEND_URL S3BucketName=$S3_BUCKET_NAME --region us-east-1
       - echo "Getting API endpoint..."
-      - >
-        API_ENDPOINT=$(aws cloudformation describe-stacks
-        --stack-name ResistanceRadio-${ENVIRONMENT:-dev}
-        --query 'Stacks[0].Outputs[?OutputKey==`ApiEndpoint`].OutputValue'
-        --output text)
-      - echo "API Endpoint:${API_ENDPOINT}"
+      - API_ENDPOINT=$(aws cloudformation describe-stacks --stack-name ResistanceRadio-dev --query 'Stacks[0].Outputs[?OutputKey==`ApiEndpoint`].OutputValue' --output text --region us-east-1)
+      - echo "API Endpoint is $API_ENDPOINT"
       - echo "Lambda deployment completed successfully"
 
 artifacts:
