@@ -70,7 +70,9 @@ const ResourcesPage: React.FC = () => {
     }
 
     if (selectedType !== 'all') {
-      filtered = filtered.filter(resource => resource.resource_type === selectedType);
+      filtered = filtered.filter(resource => 
+        resource.resource_type.toLowerCase() === selectedType.toLowerCase()
+      );
     }
 
     if (searchQuery.trim()) {
@@ -101,7 +103,8 @@ const ResourcesPage: React.FC = () => {
   };
 
   const getResourceIcon = (type: string): string => {
-    switch (type) {
+    const lowerType = type.toLowerCase();
+    switch (lowerType) {
       case 'pdf':
         return '📄';
       case 'audio':
