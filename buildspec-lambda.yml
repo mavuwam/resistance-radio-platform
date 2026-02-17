@@ -20,8 +20,6 @@ phases:
       - echo "Node version:" && node --version
       - echo "NPM version:" && npm --version
       - echo "SAM version:" && sam --version
-      - echo "Validating SAM template..."
-      - sam validate --lint
   
   build:
     commands:
@@ -29,6 +27,8 @@ phases:
       - cd backend
       - npm run build
       - cd ..
+      - echo "Validating SAM template..."
+      - sam validate --lint
       - echo "Building SAM application..."
       - sam build
       - echo "Build completed successfully"
