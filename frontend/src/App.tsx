@@ -1,5 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { lazy, useEffect } from 'react';
 import { AudioPlayerProvider } from './contexts/AudioPlayerContext';
 import { AuthProvider } from './contexts/AuthContext';
 import PageLayout from './components/PageLayout';
@@ -7,6 +7,17 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/AdminLayout';
 import GlobalRadioPlayer from './components/GlobalRadioPlayer';
 import './App.css';
+
+// Scroll to top on route change
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
 
 // Lazy load page components for code splitting
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -40,6 +51,7 @@ function App() {
     <AuthProvider>
       <AudioPlayerProvider>
         <Router>
+          <ScrollToTop />
           <div className="App">
             <Routes>
               {/* Public routes */}
