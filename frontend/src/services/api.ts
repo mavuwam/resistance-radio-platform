@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { generateSecureToken } from '../utils/security';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -7,7 +8,60 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Enable cookies for CSRF protection
+  timeout: 30000, // 30 second timeout
 });
+
+// Request interceptor for security
+api.interceptors.request.use(
+  (config) => {
+    // Add CSRF token if available
+    const csrfToken = sessionStorage.getItem('csrf-token');
+    if (csrfToken) {
+      config.headers['X-CSRF-Token'] = csrfToken;
+    }
+    
+    // Add request ID for tracking
+    config.headers['X-Request-ID'] = generateSecureToken();
+    
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor for error handling
+api.interceptors.response.use(
+  (response) => {
+    // Store CSRF token if provided
+    const csrfToken = response.headers['x-csrf-token'];
+    if (csrfToken) {
+      sessionStorage.setItem('csrf-token', csrfToken);
+    }
+    return response;
+  },
+  (error) => {
+    // Handle specific error cases
+    if (error.response?.status === 401) {
+      // Unauthorized - clear auth data
+      localStorage.removeItem('token');
+      sessionStorage.clear();
+      
+      // Redirect to login if not already there
+      if (!window.location.pathname.includes('/admin/login')) {
+        window.location.href = '/admin/login';
+      }
+    }
+    
+    if (error.response?.status === 429) {
+      // Rate limited
+      console.warn('Rate limit exceeded. Please try again later.');
+    }
+    
+    return Promise.reject(error);
+  }
+);
 
 // Shows
 export const getShows = async (params?: { category?: string; is_active?: boolean }) => {

@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { lazy, useEffect, Suspense } from 'react';
 import { AudioPlayerProvider } from './contexts/AudioPlayerContext';
 import { AuthProvider } from './contexts/AuthContext';
+import { SecurityProvider } from './contexts/SecurityContext';
 import PageLayout from './components/PageLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/AdminLayout';
@@ -51,13 +52,14 @@ const AdminEpisodesPage = lazy(() => import('./pages/AdminEpisodesPage'));
 function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <AudioPlayerProvider>
-          <Router>
-            <ScrollToTop />
-            <div className="App">
-              <Suspense fallback={<LoadingFallback />}>
-                <Routes>
+      <SecurityProvider>
+        <AuthProvider>
+          <AudioPlayerProvider>
+            <Router>
+              <ScrollToTop />
+              <div className="App">
+                <Suspense fallback={<LoadingFallback />}>
+                  <Routes>
               {/* Public routes */}
               <Route path="/" element={<PageLayout><HomePage /></PageLayout>} />
               <Route path="/about" element={<PageLayout><AboutPage /></PageLayout>} />
@@ -130,11 +132,12 @@ function App() {
                   </AdminLayout>
                 </ProtectedRoute>
               } />
-              </Suspense>
-            </div>
-          </Router>
-        </AudioPlayerProvider>
-      </AuthProvider>
+                </Suspense>
+              </div>
+            </Router>
+          </AudioPlayerProvider>
+        </AuthProvider>
+      </SecurityProvider>
     </ErrorBoundary>
   );
 }
