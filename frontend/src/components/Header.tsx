@@ -8,11 +8,22 @@ const Header: React.FC = () => {
   const location = useLocation();
   const isLive = false; // Will be connected to live status API
 
-  const navItems = [
+  const desktopNavItems = [
     { name: 'Home', path: '/' },
     { name: 'About', path: '/about' },
     { name: 'Shows', path: '/shows' },
     { name: 'Listen', path: '/listen' },
+    { name: 'News & Insights', path: '/news' },
+    { name: 'Events', path: '/events' },
+    { name: 'Get Involved', path: '/get-involved' },
+    { name: 'Resources', path: '/resources' },
+    { name: 'Contact', path: '/contact' },
+  ];
+
+  const mobileNavItems = [
+    { name: 'Home', path: '/' },
+    { name: 'About', path: '/about' },
+    { name: 'Shows', path: '/shows' },
     { name: 'News & Insights', path: '/news' },
     { name: 'Events', path: '/events' },
     { name: 'Get Involved', path: '/get-involved' },
@@ -46,7 +57,7 @@ const Header: React.FC = () => {
 
           {/* Desktop Navigation */}
           <nav className="nav desktop-nav" role="navigation" aria-label="Main navigation">
-            {navItems.map((item) => (
+            {desktopNavItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
@@ -71,7 +82,7 @@ const Header: React.FC = () => {
           {/* Mobile Navigation Menu */}
           {isOpen && (
             <div className="lg:hidden border-t border-[#f5f5f5]/10 py-6 space-y-2 mobile-nav-menu">
-              {navItems.map((item) => (
+              {mobileNavItems.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
