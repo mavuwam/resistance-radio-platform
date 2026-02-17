@@ -16,7 +16,6 @@ capabilities = "CAPABILITY_IAM"
 confirm_changeset = false
 resolve_s3 = true
 region = "us-east-1"
-profile = "Personal_Account_734110488556"
 parameter_overrides = [
     "Environment=dev",
     "FrontendURL=https://resistanceradiostation.org",
