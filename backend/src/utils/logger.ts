@@ -32,21 +32,27 @@ const format = winston.format.combine(
 );
 
 // Define which transports the logger must use
-const transports = [
+// In Lambda, only use console logging (CloudWatch captures stdout)
+const transports: winston.transport[] = [
   // Console transport
   new winston.transports.Console(),
-  
-  // Error log file
-  new winston.transports.File({
-    filename: path.join('logs', 'error.log'),
-    level: 'error',
-  }),
-  
-  // Combined log file
-  new winston.transports.File({
-    filename: path.join('logs', 'combined.log'),
-  }),
 ];
+
+// Only add file transports if not running in Lambda
+if (!process.env.AWS_LAMBDA_FUNCTION_NAME) {
+  transports.push(
+    // Error log file
+    new winston.transports.File({
+      filename: path.join('logs', 'error.log'),
+      level: 'error',
+    }),
+    
+    // Combined log file
+    new winston.transports.File({
+      filename: path.join('logs', 'combined.log'),
+    })
+  );
+}
 
 // Create the logger
 const logger = winston.createLogger({
