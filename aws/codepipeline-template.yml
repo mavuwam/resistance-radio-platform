@@ -16,11 +16,31 @@ Parameters:
     NoEcho: true
     Description: GitHub personal access token for CodePipeline
     
-  EC2InstanceId:
+  DBHost:
     Type: String
-    Default: i-07f7e8accc4b07682
-    Description: EC2 instance ID for backend deployment
-    
+    Description: RDS PostgreSQL endpoint
+    Default: resistance-radio-db-dev.co5k6sew451g.us-east-1.rds.amazonaws.com
+  
+  DBName:
+    Type: String
+    Default: resistance_radio
+    Description: Database name
+  
+  DBUser:
+    Type: String
+    Default: postgres
+    Description: Database username
+  
+  DBPassword:
+    Type: String
+    NoEcho: true
+    Description: Database password
+  
+  JWTSecret:
+    Type: String
+    NoEcho: true
+    Description: JWT secret key
+  
   S3BucketFrontend:
     Type: String
     Default: resistance-radio-website-dev-734110488556
@@ -33,8 +53,17 @@ Parameters:
     
   ViteApiUrl:
     Type: String
-    Default: https://api.resistanceradiostation.org/api
+    Default: https://api.resistanceradiostation.org
     Description: Backend API URL for frontend build
+  
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Environment name
 
 Resources:
   # S3 Bucket for Pipeline Artifacts
@@ -70,6 +99,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
         - arn:aws:iam::aws:policy/CloudFrontFullAccess
+        - arn:aws:iam::aws:policy/PowerUserAccess
       Policies:
         - PolicyName: CodeBuildPolicy
           PolicyDocument:
@@ -87,6 +117,13 @@ Resources:
                   - s3:PutObject
                 Resource:
                   - !Sub '${ArtifactBucket.Arn}/*'
+              - Effect: Allow
+                Action:
+                  - cloudformation:*
+                  - lambda:*
+                  - apigateway:*
+                  - iam:*
+                Resource: '*'
 
   # CodePipeline Service Role
   CodePipelineServiceRole:
@@ -123,12 +160,6 @@ Resources:
                   - !GetAtt BackendBuildProject.Arn
               - Effect: Allow
                 Action:
-                  - codedeploy:CreateDeployment
-                  - codedeploy:GetApplication
-                  - codedeploy:GetApplicationRevision
-                  - codedeploy:GetDeployment
-                  - codedeploy:GetDeploymentConfig
-                  - codedeploy:RegisterApplicationRevision
                 Resource: '*'
 
   # Frontend CodeBuild Project
@@ -159,12 +190,12 @@ Resources:
         Type: S3
         Location: !Sub '${ArtifactBucket}/build-cache'
 
-  # Backend CodeBuild Project
+  # Backend CodeBuild Project (Lambda Deployment)
   BackendBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
       Name: ResistanceRadio-Backend-Build
-      Description: Build backend Node.js application
+      Description: Build and deploy backend to Lambda
       ServiceRole: !GetAtt CodeBuildServiceRole.Arn
       Artifacts:
         Type: CODEPIPELINE
@@ -172,52 +203,34 @@ Resources:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/standard:7.0
+        EnvironmentVariables:
+          - Name: ENVIRONMENT
+            Value: !Ref Environment
+          - Name: DB_HOST
+            Value: !Ref DBHost
+          - Name: DB_NAME
+            Value: !Ref DBName
+          - Name: DB_USER
+            Value: !Ref DBUser
+          - Name: DB_PASSWORD
+            Value: !Ref DBPassword
+            Type: PLAINTEXT
+          - Name: JWT_SECRET
+            Value: !Ref JWTSecret
+            Type: PLAINTEXT
+          - Name: FRONTEND_URL
+            Value: !Ref ViteApiUrl
+          - Name: S3_BUCKET_NAME
+            Value: !Ref S3BucketFrontend
       Source:
         Type: CODEPIPELINE
-        BuildSpec: buildspec-backend.yml
-      TimeoutInMinutes: 15
+        BuildSpec: buildspec-lambda.yml
+      TimeoutInMinutes: 30
       Cache:
         Type: S3
         Location: !Sub '${ArtifactBucket}/build-cache'
 
-  # CodeDeploy Application
-  CodeDeployApplication:
-    Type: AWS::CodeDeploy::Application
-    Properties:
-      ApplicationName: ResistanceRadio-Backend
-      ComputePlatform: Server
 
-  # CodeDeploy Deployment Group
-  DeploymentGroup:
-    Type: AWS::CodeDeploy::DeploymentGroup
-    Properties:
-      ApplicationName: !Ref CodeDeployApplication
-      DeploymentGroupName: ResistanceRadio-Backend-DeploymentGroup
-      ServiceRoleArn: !GetAtt CodeDeployServiceRole.Arn
-      Ec2TagFilters:
-        - Type: KEY_AND_VALUE
-          Key: Name
-          Value: resistance-radio-backend
-      DeploymentConfigName: CodeDeployDefault.OneAtATime
-      AutoRollbackConfiguration:
-        Enabled: true
-        Events:
-          - DEPLOYMENT_FAILURE
-
-  # CodeDeploy Service Role
-  CodeDeployServiceRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: ResistanceRadioCodeDeployRole
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: codedeploy.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole
 
   # Main CI/CD Pipeline
   Pipeline:
@@ -275,22 +288,6 @@ Resources:
               InputArtifacts:
                 - Name: SourceOutput
               OutputArtifacts:
-                - Name: BackendBuildOutput
-              RunOrder: 1
-
-        # Deploy Stage
-        - Name: Deploy
-          Actions:
-            - Name: DeployBackend
-              ActionTypeId:
-                Category: Deploy
-                Owner: AWS
-                Provider: CodeDeploy
-                Version: '1'
-              Configuration:
-                ApplicationName: !Ref CodeDeployApplication
-                DeploymentGroupName: !Ref DeploymentGroup
-              InputArtifacts:
                 - Name: BackendBuildOutput
               RunOrder: 1
 
