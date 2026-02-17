@@ -12,7 +12,7 @@ interface Resource {
   resource_type: string;
   file_url?: string;
   external_url?: string;
-  file_size_bytes?: number;
+  file_size_bytes?: number | string;
 }
 
 const ResourcesPage: React.FC = () => {
@@ -115,13 +115,14 @@ const ResourcesPage: React.FC = () => {
     }
   };
 
-  const formatFileSize = (bytes?: number): string => {
+  const formatFileSize = (bytes?: number | string): string => {
     if (!bytes) return '';
-    const mb = bytes / (1024 * 1024);
+    const numBytes = typeof bytes === 'string' ? parseInt(bytes, 10) : bytes;
+    const mb = numBytes / (1024 * 1024);
     if (mb >= 1) {
       return `${mb.toFixed(1)} MB`;
     }
-    const kb = bytes / 1024;
+    const kb = numBytes / 1024;
     return `${kb.toFixed(0)} KB`;
   };
 
