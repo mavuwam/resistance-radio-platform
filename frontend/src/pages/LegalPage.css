@@ -9,12 +9,14 @@
 .legal-page h1 {
   color: var(--color-burnt-orange);
   margin-bottom: 0.5rem;
+  text-align: center;
 }
 
 .last-updated {
   color: var(--color-gray-light);
   font-style: italic;
   margin-bottom: 3rem;
+  text-align: center;
 }
 
 .legal-page section {
@@ -25,6 +27,7 @@
   color: var(--color-gold);
   margin-bottom: 1rem;
   margin-top: 2rem;
+  text-align: center;
 }
 
 .legal-page h3 {
@@ -32,18 +35,26 @@
   margin-bottom: 0.75rem;
   margin-top: 1.5rem;
   font-size: 1.1rem;
+  text-align: center;
 }
 
 .legal-page p {
   color: var(--color-gray-light);
   line-height: 1.8;
   margin-bottom: 1rem;
+  text-align: center;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .legal-page ul {
   color: var(--color-gray-light);
   line-height: 1.8;
-  margin: 1rem 0 1rem 2rem;
+  margin: 1rem auto;
+  max-width: 700px;
+  text-align: left;
+  list-style-position: inside;
 }
 
 .legal-page li {
