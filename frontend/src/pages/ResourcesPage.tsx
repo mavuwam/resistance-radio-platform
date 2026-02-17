@@ -92,6 +92,14 @@ const ResourcesPage: React.FC = () => {
     }
   };
 
+  const handleViewCollection = (category: string) => {
+    setSelectedCategory(category);
+    setSelectedType('all');
+    setSearchQuery('');
+    // Scroll to resources grid
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const getResourceIcon = (type: string): string => {
     switch (type) {
       case 'pdf':
@@ -223,11 +231,17 @@ const ResourcesPage: React.FC = () => {
               <h3>Constitutional Literacy Pack</h3>
               <p>Complete guide to understanding your constitutional rights and civic responsibilities</p>
               <ul>
+                <li>Zimbabwe Constitution (Consolidated 2023)</li>
                 <li>Bill of Rights explained</li>
                 <li>Civic participation guide</li>
                 <li>Electoral process overview</li>
               </ul>
-              <button className="btn btn-secondary">View Collection</button>
+              <button 
+                className="btn btn-secondary"
+                onClick={() => handleViewCollection('constitutional_explainer')}
+              >
+                View Collection
+              </button>
             </div>
 
             <div className="collection-card">
@@ -238,7 +252,12 @@ const ResourcesPage: React.FC = () => {
                 <li>Discussion guides</li>
                 <li>Audio clips for classroom use</li>
               </ul>
-              <button className="btn btn-secondary">View Collection</button>
+              <button 
+                className="btn btn-secondary"
+                onClick={() => handleViewCollection('educational_material')}
+              >
+                View Collection
+              </button>
             </div>
 
             <div className="collection-card">
@@ -249,7 +268,12 @@ const ResourcesPage: React.FC = () => {
                 <li>Logos and branding</li>
                 <li>Press releases</li>
               </ul>
-              <button className="btn btn-secondary">View Collection</button>
+              <button 
+                className="btn btn-secondary"
+                onClick={() => handleViewCollection('press_kit')}
+              >
+                View Collection
+              </button>
             </div>
           </div>
         </section>
