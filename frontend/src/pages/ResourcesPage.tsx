@@ -53,9 +53,10 @@ const ResourcesPage: React.FC = () => {
     try {
       setLoading(true);
       const data = await getResources({ limit: 100 });
-      setResources(data);
+      setResources(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching resources:', error);
+      setResources([]);
     } finally {
       setLoading(false);
     }

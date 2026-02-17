@@ -41,9 +41,11 @@ const ArticlePage: React.FC = () => {
         category: articleData.category, 
         limit: 3 
       });
-      setRelatedArticles(relatedData.filter((a: Article) => a.id !== articleData.id).slice(0, 3));
+      const relatedArray = Array.isArray(relatedData) ? relatedData : [];
+      setRelatedArticles(relatedArray.filter((a: Article) => a.id !== articleData.id).slice(0, 3));
     } catch (error) {
       console.error('Error fetching article:', error);
+      setRelatedArticles([]);
     } finally {
       setLoading(false);
     }

@@ -43,10 +43,12 @@ const EventsPage: React.FC = () => {
         getEvents({ status: 'upcoming', limit: 20 }),
         getEvents({ status: 'past', limit: 20 })
       ]);
-      setUpcomingEvents(upcoming);
-      setPastEvents(past);
+      setUpcomingEvents(Array.isArray(upcoming) ? upcoming : []);
+      setPastEvents(Array.isArray(past) ? past : []);
     } catch (error) {
       console.error('Error fetching events:', error);
+      setUpcomingEvents([]);
+      setPastEvents([]);
     } finally {
       setLoading(false);
     }

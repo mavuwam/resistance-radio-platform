@@ -31,11 +31,11 @@ const HomePage: React.FC = () => {
       try {
         // Fetch featured shows (limit to 4)
         const showsData = await getShows({ is_active: true });
-        setFeaturedShows(showsData.shows?.slice(0, 4) || []);
+        setFeaturedShows(Array.isArray(showsData) ? showsData.slice(0, 4) : []);
 
         // Fetch recent episodes for upcoming broadcasts section
         const episodesData = await getEpisodes({ limit: 5, sort: 'published_at', order: 'DESC' });
-        setUpcomingBroadcasts(episodesData.episodes || []);
+        setUpcomingBroadcasts(Array.isArray(episodesData) ? episodesData : []);
       } catch (error) {
         console.error('Error fetching home page data:', error);
       } finally {

@@ -5,7 +5,7 @@
 
 set -e
 
-STACK_NAME="ResistanceRadio-Pipeline"
+STACK_NAME="resistance-radio-pipeline"
 AWS_REGION="us-east-1"
 AWS_PROFILE="Personal_Account_734110488556"
 

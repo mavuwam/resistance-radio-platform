@@ -12,7 +12,7 @@ const api = axios.create({
 // Shows
 export const getShows = async (params?: { category?: string; is_active?: boolean }) => {
   const response = await api.get('/shows', { params });
-  return response.data.shows || response.data || [];
+  return response.data.shows || [];
 };
 
 export const getShowBySlug = async (slug: string) => {
@@ -22,7 +22,7 @@ export const getShowBySlug = async (slug: string) => {
 
 export const getShowEpisodes = async (slug: string, params?: { limit?: number; offset?: number }) => {
   const response = await api.get(`/shows/${slug}/episodes`, { params });
-  return response.data.episodes || response.data || [];
+  return response.data.episodes || [];
 };
 
 // Episodes
@@ -35,7 +35,7 @@ export const getEpisodes = async (params?: {
   order?: string;
 }) => {
   const response = await api.get('/episodes', { params });
-  return response.data.episodes || response.data || [];
+  return response.data.episodes || [];
 };
 
 export const getEpisodeBySlug = async (slug: string) => {
@@ -52,7 +52,7 @@ export const getArticles = async (params?: {
   order?: string;
 }) => {
   const response = await api.get('/articles', { params });
-  return response.data.articles || response.data || [];
+  return response.data.articles || [];
 };
 
 export const getArticleBySlug = async (slug: string) => {
@@ -84,7 +84,7 @@ export const getResources = async (params?: {
   offset?: number;
 }) => {
   const response = await api.get('/resources', { params });
-  return response.data.resources || response.data || [];
+  return response.data.resources || [];
 };
 
 export const getResourceBySlug = async (slug: string) => {

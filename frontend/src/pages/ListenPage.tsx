@@ -40,9 +40,10 @@ const ListenPage: React.FC = () => {
       try {
         setLoading(true);
         const episodesData = await getEpisodes({ limit: 50, sort: 'published_at', order: 'desc' });
-        setEpisodes(episodesData);
+        setEpisodes(Array.isArray(episodesData) ? episodesData : []);
       } catch (error) {
         console.error('Error fetching data:', error);
+        setEpisodes([]);
       } finally {
         setLoading(false);
       }

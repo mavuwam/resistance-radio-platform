@@ -48,9 +48,10 @@ const ShowDetailPage: React.FC = () => {
         getShowEpisodes(slug!)
       ]);
       setShow(showData);
-      setEpisodes(episodesData);
+      setEpisodes(Array.isArray(episodesData) ? episodesData : []);
     } catch (error) {
       console.error('Error fetching show data:', error);
+      setEpisodes([]);
     } finally {
       setLoading(false);
     }

@@ -48,9 +48,10 @@ const NewsPage: React.FC = () => {
         sort: 'published_at', 
         order: sortOrder 
       });
-      setArticles(data);
+      setArticles(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching articles:', error);
+      setArticles([]);
     } finally {
       setLoading(false);
     }

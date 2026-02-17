@@ -40,9 +40,10 @@ const ShowsPage: React.FC = () => {
       setLoading(true);
       const params = selectedCategory !== 'all' ? { category: selectedCategory, is_active: true } : { is_active: true };
       const data = await getShows(params);
-      setShows(data);
+      setShows(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching shows:', error);
+      setShows([]);
     } finally {
       setLoading(false);
     }
