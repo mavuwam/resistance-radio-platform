@@ -20,6 +20,7 @@
     "@aws-sdk/s3-request-presigner": "^3.987.0",
     "@sentry/integrations": "^7.114.0",
     "@sentry/node": "^10.38.0",
+    "@types/aws-lambda": "^8.10.160",
     "@types/compression": "^1.8.1",
     "@types/multer": "^2.0.0",
     "@types/nodemailer": "^7.0.9",
@@ -42,6 +43,7 @@
     "nodemailer": "^8.0.1",
     "pg": "^8.11.3",
     "sanitize-html": "^2.11.0",
+    "serverless-http": "^3.2.0",
     "sharp": "^0.33.0",
     "uuid": "^13.0.0",
     "winston": "^3.19.0"
