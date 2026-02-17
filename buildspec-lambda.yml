@@ -36,28 +36,28 @@ phases:
   post_build:
     commands:
       - echo "Deploying to Lambda..."
-      - |
-        sam deploy \
-          --stack-name ResistanceRadio-${ENVIRONMENT:-dev} \
-          --no-confirm-changeset \
-          --no-fail-on-empty-changeset \
-          --capabilities CAPABILITY_IAM \
-          --parameter-overrides \
-            Environment=${ENVIRONMENT:-dev} \
-            DBHost=${DB_HOST} \
-            DBName=${DB_NAME} \
-            DBUser=${DB_USER} \
-            DBPassword=${DB_PASSWORD} \
-            JWTSecret=${JWT_SECRET} \
-            FrontendURL=${FRONTEND_URL} \
-            S3BucketName=${S3_BUCKET_NAME}
+      - >
+        sam deploy
+        --stack-name ResistanceRadio-${ENVIRONMENT:-dev}
+        --no-confirm-changeset
+        --no-fail-on-empty-changeset
+        --capabilities CAPABILITY_IAM
+        --parameter-overrides
+        Environment=${ENVIRONMENT:-dev}
+        DBHost=${DB_HOST}
+        DBName=${DB_NAME}
+        DBUser=${DB_USER}
+        DBPassword=${DB_PASSWORD}
+        JWTSecret=${JWT_SECRET}
+        FrontendURL=${FRONTEND_URL}
+        S3BucketName=${S3_BUCKET_NAME}
       - echo "Getting API endpoint..."
-      - |
-        API_ENDPOINT=$(aws cloudformation describe-stacks \
-          --stack-name ResistanceRadio-${ENVIRONMENT:-dev} \
-          --query 'Stacks[0].Outputs[?OutputKey==`ApiEndpoint`].OutputValue' \
-          --output text)
-      - echo "API Endpoint: ${API_ENDPOINT}"
+      - >
+        API_ENDPOINT=$(aws cloudformation describe-stacks
+        --stack-name ResistanceRadio-${ENVIRONMENT:-dev}
+        --query 'Stacks[0].Outputs[?OutputKey==`ApiEndpoint`].OutputValue'
+        --output text)
+      - echo "API Endpoint:${API_ENDPOINT}"
       - echo "Lambda deployment completed successfully"
 
 artifacts:
