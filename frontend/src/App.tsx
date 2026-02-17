@@ -1,11 +1,13 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { lazy, useEffect } from 'react';
+import { lazy, useEffect, Suspense } from 'react';
 import { AudioPlayerProvider } from './contexts/AudioPlayerContext';
 import { AuthProvider } from './contexts/AuthContext';
 import PageLayout from './components/PageLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/AdminLayout';
 import GlobalRadioPlayer from './components/GlobalRadioPlayer';
+import ErrorBoundary from './components/ErrorBoundary';
+import LoadingFallback from './components/LoadingFallback';
 import './App.css';
 
 // Scroll to top on route change
@@ -48,12 +50,14 @@ const AdminEpisodesPage = lazy(() => import('./pages/AdminEpisodesPage'));
 
 function App() {
   return (
-    <AuthProvider>
-      <AudioPlayerProvider>
-        <Router>
-          <ScrollToTop />
-          <div className="App">
-            <Routes>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AudioPlayerProvider>
+          <Router>
+            <ScrollToTop />
+            <div className="App">
+              <Suspense fallback={<LoadingFallback />}>
+                <Routes>
               {/* Public routes */}
               <Route path="/" element={<PageLayout><HomePage /></PageLayout>} />
               <Route path="/about" element={<PageLayout><AboutPage /></PageLayout>} />
@@ -126,12 +130,12 @@ function App() {
                   </AdminLayout>
                 </ProtectedRoute>
               } />
-            </Routes>
-            <GlobalRadioPlayer />
-          </div>
-        </Router>
-      </AudioPlayerProvider>
-    </AuthProvider>
+              </Suspense>
+            </div>
+          </Router>
+        </AudioPlayerProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
