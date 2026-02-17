@@ -132,7 +132,9 @@ function App() {
                   </AdminLayout>
                 </ProtectedRoute>
               } />
+            </Routes>
                 </Suspense>
+                <GlobalRadioPlayer />
               </div>
             </Router>
           </AudioPlayerProvider>
