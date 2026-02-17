@@ -1,15 +1,26 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import Navigation from './Navigation';
+import { Link, useLocation } from 'react-router-dom';
+import { Menu, X, Radio } from 'lucide-react';
 import './Header.css';
 
 const Header: React.FC = () => {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const location = useLocation();
   const isLive = false; // Will be connected to live status API
 
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
+  const navItems = [
+    { name: 'Home', path: '/' },
+    { name: 'About', path: '/about' },
+    { name: 'Shows', path: '/shows' },
+    { name: 'Listen', path: '/listen' },
+    { name: 'News & Insights', path: '/news' },
+    { name: 'Events', path: '/events' },
+    { name: 'Get Involved', path: '/get-involved' },
+    { name: 'Resources', path: '/resources' },
+    { name: 'Contact', path: '/contact' },
+  ];
+
+  const isActive = (path: string) => location.pathname === path;
 
   return (
     <header className="header" role="banner">
@@ -33,24 +44,61 @@ const Header: React.FC = () => {
             </div>
           )}
 
-          <button 
-            className={`mobile-menu-toggle ${mobileMenuOpen ? 'open' : ''}`}
-            onClick={toggleMobileMenu}
-            aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-            aria-expanded={mobileMenuOpen}
-            aria-controls="main-navigation"
+          {/* Desktop Navigation */}
+          <nav className="nav desktop-nav" role="navigation" aria-label="Main navigation">
+            {navItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={isActive(item.path) ? 'active' : ''}
+                aria-label={item.name}
+              >
+                {item.name}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="lg:hidden text-[#f5f5f5] hover:text-[#d4633f] transition-colors p-2 relative z-50 mobile-menu-toggle"
+            aria-label={isOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={isOpen}
           >
-            <span aria-hidden="true"></span>
-            <span aria-hidden="true"></span>
-            <span aria-hidden="true"></span>
+            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
 
-          <div 
-            className={`nav-wrapper ${mobileMenuOpen ? 'open' : ''}`}
-            id="main-navigation"
-          >
-            <Navigation onLinkClick={() => setMobileMenuOpen(false)} />
-          </div>
+          {/* Mobile Navigation Menu */}
+          {isOpen && (
+            <div className="lg:hidden border-t border-[#f5f5f5]/10 py-6 space-y-2 mobile-nav-menu">
+              {navItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setIsOpen(false)}
+                  className={`block px-4 py-3 rounded-xl transition-all ${
+                    isActive(item.path)
+                      ? 'text-[#d4633f] bg-[#d4633f]/10'
+                      : 'text-[#f5f5f5] hover:text-[#d4633f] hover:bg-[#f5f5f5]/5'
+                  }`}
+                >
+                  {item.name}
+                </Link>
+              ))}
+              <Link
+                to="/listen"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center justify-center gap-2 mt-4 px-4 py-3 bg-[#d4633f] text-[#f5f5f5] rounded-full"
+              >
+                <div className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                </div>
+                <Radio className="w-4 h-4" />
+                <span className="font-medium">Listen Live</span>
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </header>
