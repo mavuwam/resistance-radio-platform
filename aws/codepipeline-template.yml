@@ -158,9 +158,6 @@ Resources:
                 Resource:
                   - !GetAtt FrontendBuildProject.Arn
                   - !GetAtt BackendBuildProject.Arn
-              - Effect: Allow
-                Action:
-                Resource: '*'
 
   # Frontend CodeBuild Project
   FrontendBuildProject:
