@@ -73,9 +73,9 @@ Globals:
   Api:
     Cors:
       AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
-      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-CSRF-Token'"
-      AllowOrigin: !Sub "'${FrontendURL}'"
-      AllowCredentials: true
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-CSRF-Token,X-Request-ID'"
+      AllowOrigin: "'*'"
+      AllowCredentials: false
     Auth:
       ApiKeyRequired: false
 
@@ -89,9 +89,9 @@ Resources:
       TracingEnabled: true
       Cors:
         AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
-        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-CSRF-Token'"
-        AllowOrigin: !Sub "'${FrontendURL}'"
-        AllowCredentials: true
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-CSRF-Token,X-Request-ID'"
+        AllowOrigin: "'*'"
+        AllowCredentials: false
       DefinitionBody:
         swagger: '2.0'
         info:
