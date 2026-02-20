@@ -1,0 +1,135 @@
+# Implementation Plan
+
+- [ ] 1. Write bug condition exploration test
+  - **Property 1: Fault Condition** - Admin Login Authentication Flow Failure
+  - **CRITICAL**: This test MUST FAIL on unfixed code - failure confirms the bug exists
+  - **DO NOT attempt to fix the test or the code when it fails**
+  - **NOTE**: This test encodes the expected behavior - it will validate the fix when it passes after implementation
+  - **GOAL**: Surface counterexamples that demonstrate the bug exists
+  - **Scoped PBT Approach**: Scope the property to concrete failing case: admin@resistanceradio.org with password admin123
+  - Test that admin login with valid credentials (admin@resistanceradio.org / admin123) results in:
+    - Token stored with consistent localStorage key `auth_token`
+    - Authorization header automatically attached to subsequent requests
+    - Admin user exists in database
+    - API endpoint URL is correctly configured
+    - Authenticated requests succeed (not 401)
+  - The test assertions should match the Expected Behavior Properties from design:
+    - `result.tokenStoredWithCorrectKey === true`
+    - `result.authorizationHeaderPresent === true`
+    - `result.adminUserExists === true`
+    - `result.apiUrlCorrect === true`
+    - `result.requestSuccessful === true`
+  - Run test on UNFIXED code
+  - **EXPECTED OUTCOME**: Test FAILS (this is correct - it proves the bug exists)
+  - Document counterexamples found:
+    - Token stored with key `auth_token` but retrieved with key `token` returns null
+    - Authorization header is `Bearer null` or missing
+    - Admin user not found in database
+    - API requests fail with 401 or network errors
+  - Mark task complete when test is written, run, and failure is documented
+  - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7_
+
+- [ ] 2. Write preservation property tests (BEFORE implementing fix)
+  - **Property 2: Preservation** - Non-Admin Authentication Behavior
+  - **IMPORTANT**: Follow observation-first methodology
+  - Observe behavior on UNFIXED code for non-buggy inputs (logout, registration, 401 handling, token validation, password hashing, CORS, rate limiting)
+  - Write property-based tests capturing observed behavior patterns from Preservation Requirements:
+    - Logout clears all authentication data from localStorage and axios headers
+    - Registration automatically logs users in after successful account creation
+    - 401 responses trigger auth data clearing and redirect to login page
+    - JWT token validation verifies signature, expiration, and user existence
+    - Password hashing uses bcrypt with 10 salt rounds
+    - CORS accepts requests from allowed origins with credentials enabled
+    - Rate limiting enforces configured limits on auth endpoints
+  - Property-based testing generates many test cases for stronger guarantees
+  - Run tests on UNFIXED code
+  - **EXPECTED OUTCOME**: Tests PASS (this confirms baseline behavior to preserve)
+  - Mark task complete when tests are written, run, and passing on unfixed code
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
+
+- [ ] 3. Fix for admin login authentication flow
+
+  - [ ] 3.1 Standardize localStorage key to `auth_token`
+    - Update `frontend/src/services/api.ts` to use `auth_token` consistently
+    - Fix 401 interceptor to clear `auth_token` instead of `token` (line 35)
+    - Verify all localStorage operations use the same key
+    - _Bug_Condition: isBugCondition(input) where localStorageKeyMismatch() returns true_
+    - _Expected_Behavior: Token stored and retrieved with consistent key `auth_token`_
+    - _Preservation: Logout, registration, and 401 handling continue to work_
+    - _Requirements: 2.1, 3.1, 3.2, 3.3_
+
+  - [ ] 3.2 Add Authorization request interceptor to api.ts
+    - Add request interceptor in `frontend/src/services/api.ts` after line 23
+    - Retrieve token from localStorage using key `auth_token`
+    - Automatically add Authorization header: `Bearer ${token}`
+    - Remove all manual Authorization header additions from admin API functions
+    - _Bug_Condition: isBugCondition(input) where authorizationHeaderMissing() returns true_
+    - _Expected_Behavior: Authorization header automatically attached to all authenticated requests_
+    - _Preservation: Existing API functions continue to work without manual header management_
+    - _Requirements: 2.2, 2.3, 3.1_
+
+  - [ ] 3.3 Consolidate axios instance usage in AuthContext
+    - Import api instance from `frontend/src/services/api.ts` in AuthContext
+    - Replace direct axios.post calls with api.post for login and registration
+    - Remove manual axios.defaults.headers.common['Authorization'] assignments
+    - Use centralized api instance for all authentication requests
+    - _Bug_Condition: isBugCondition(input) where axiosInstanceInconsistent() returns true_
+    - _Expected_Behavior: All authentication requests use the same axios instance with interceptors_
+    - _Preservation: Login, registration, and logout continue to function correctly_
+    - _Requirements: 2.2, 3.1, 3.2_
+
+  - [ ] 3.4 Ensure admin user creation during deployment
+    - Update `backend/src/db/migrate.ts` to create admin user after migrations
+    - Import and execute create-admin logic automatically
+    - Add post-migration hook in `backend/package.json` (optional)
+    - Verify admin user exists in Lambda database
+    - _Bug_Condition: isBugCondition(input) where adminUserNotInDatabase() returns true_
+    - _Expected_Behavior: Admin user (admin@resistanceradio.org) exists in database after deployment_
+    - _Preservation: Existing migration and seeding processes continue to work_
+    - _Requirements: 2.4, 3.1_
+
+  - [ ] 3.5 Configure correct API endpoint URL
+    - Set VITE_API_URL environment variable in CloudFront deployment
+    - Update `aws/setup-cloudfront.sh` or build configuration
+    - Set value to: `https://a8tj7xh4qi.execute-api.us-east-1.amazonaws.com/dev`
+    - Verify frontend build includes correct API endpoint
+    - _Bug_Condition: isBugCondition(input) where apiUrlMisconfigured() returns true_
+    - _Expected_Behavior: Frontend uses correct Lambda API Gateway endpoint_
+    - _Preservation: Existing API communication patterns continue to work_
+    - _Requirements: 2.5, 3.1_
+
+  - [ ] 3.6 Verify bug condition exploration test now passes
+    - **Property 1: Expected Behavior** - Admin Login Authentication Flow Success
+    - **IMPORTANT**: Re-run the SAME test from task 1 - do NOT write a new test
+    - The test from task 1 encodes the expected behavior
+    - When this test passes, it confirms the expected behavior is satisfied
+    - Run bug condition exploration test from step 1
+    - **EXPECTED OUTCOME**: Test PASSES (confirms bug is fixed)
+    - Verify all assertions pass:
+      - Token stored and retrieved with consistent key
+      - Authorization header present in requests
+      - Admin user exists in database
+      - API endpoint URL is correct
+      - Authenticated requests succeed
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7_
+
+  - [ ] 3.7 Verify preservation tests still pass
+    - **Property 2: Preservation** - Non-Admin Authentication Behavior Unchanged
+    - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
+    - Run preservation property tests from step 2
+    - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
+    - Confirm all preservation tests still pass:
+      - Logout functionality unchanged
+      - Registration auto-login unchanged
+      - 401 handling unchanged
+      - Token validation unchanged
+      - Password hashing unchanged
+      - CORS configuration unchanged
+      - Rate limiting unchanged
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
+
+- [ ] 4. Checkpoint - Ensure all tests pass
+  - Run all tests (exploration + preservation)
+  - Verify admin login works end-to-end in deployed environment
+  - Verify no regressions in existing authentication flows
+  - Ask the user if questions arise
