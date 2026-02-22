@@ -53,8 +53,8 @@ Parameters:
     
   ViteApiUrl:
     Type: String
-    Default: https://api.resistanceradiostation.org
-    Description: Backend API URL for frontend build
+    Default: https://a8tj7xh4qi.execute-api.us-east-1.amazonaws.com/dev
+    Description: Backend API URL for frontend build (Lambda)
   
   Environment:
     Type: String
