@@ -2,6 +2,7 @@ import express, { Response } from 'express';
 import pool from '../../db/connection';
 import { authMiddleware, requireRole, AuthRequest } from '../../middleware/auth';
 import { body, validationResult } from 'express-validator';
+import logger from '../../utils/logger';
 
 const router = express.Router();
 
@@ -23,7 +24,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
       order = 'DESC'
     } = req.query;
     
-    let query = 'SELECT * FROM resources WHERE 1=1';
+    let query = 'SELECT * FROM resources WHERE deleted_at IS NULL';
     const params: any[] = [];
     let paramCount = 1;
 
@@ -54,7 +55,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     const result = await pool.query(query, params);
 
     // Get total count with same filters
-    let countQuery = 'SELECT COUNT(*) FROM resources WHERE 1=1';
+    let countQuery = 'SELECT COUNT(*) FROM resources WHERE deleted_at IS NULL';
     const countParams: any[] = [];
     let countParamCount = 1;
 
@@ -72,9 +73,15 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 
     const countResult = await pool.query(countQuery, countParams);
 
+    // Map database fields to frontend expected fields
+    const resources = result.rows.map(row => ({
+      ...row,
+      file_size: row.file_size_bytes
+    }));
+
     res.json({
-      resources: result.rows,
-      count: result.rows.length,
+      resources,
+      count: resources.length,
       total: parseInt(countResult.rows[0].count),
       limit: parseInt(limit as string),
       offset: parseInt(offset as string)
@@ -97,7 +104,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
 
-    const result = await pool.query('SELECT * FROM resources WHERE id = $1', [id]);
+    const result = await pool.query('SELECT * FROM resources WHERE id = $1 AND deleted_at IS NULL', [id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({
@@ -108,7 +115,13 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
       });
     }
 
-    res.json(result.rows[0]);
+    // Map database fields to frontend expected fields
+    const resource = {
+      ...result.rows[0],
+      file_size: result.rows[0].file_size_bytes
+    };
+
+    res.json(resource);
   } catch (error) {
     console.error('Error fetching resource:', error);
     res.status(500).json({
@@ -148,23 +161,34 @@ router.post('/',
         category
       } = req.body;
 
+      // Generate slug from title
+      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
       const result = await pool.query(
         `INSERT INTO resources (
-          title, description, file_url, file_type, file_size, category, created_at, updated_at
+          title, slug, description, resource_type, file_type, file_url, file_size_bytes, category, created_at, updated_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
         RETURNING *`,
         [
-          title, 
+          title,
+          slug,
           description, 
+          file_type, // resource_type
+          file_type, // file_type
           file_url, 
-          file_type,
           file_size || null,
           category || null
         ]
       );
 
-      res.status(201).json(result.rows[0]);
+      // Map database fields to frontend expected fields
+      const resource = {
+        ...result.rows[0],
+        file_size: result.rows[0].file_size_bytes
+      };
+
+      res.status(201).json(resource);
     } catch (error) {
       console.error('Error creating resource:', error);
       res.status(500).json({ 
@@ -199,8 +223,8 @@ router.put('/:id',
       const { id } = req.params;
       const updates = req.body;
 
-      // Check if resource exists
-      const existingResource = await pool.query('SELECT id, file_url FROM resources WHERE id = $1', [id]);
+      // Check if resource exists (excluding soft-deleted)
+      const existingResource = await pool.query('SELECT id, file_url FROM resources WHERE id = $1 AND deleted_at IS NULL', [id]);
       if (existingResource.rows.length === 0) {
         return res.status(404).json({ 
           error: { 
@@ -208,6 +232,22 @@ router.put('/:id',
             code: 'NOT_FOUND' 
           } 
         });
+      }
+
+      // If title is being updated, regenerate slug
+      if (updates.title) {
+        updates.slug = updates.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      }
+
+      // Map file_type to both resource_type and file_type columns
+      if (updates.file_type) {
+        updates.resource_type = updates.file_type;
+      }
+
+      // Map file_size to file_size_bytes
+      if (updates.file_size !== undefined) {
+        updates.file_size_bytes = updates.file_size;
+        delete updates.file_size;
       }
 
       // If file_url is being updated, we should delete the old file from S3
@@ -226,7 +266,14 @@ router.put('/:id',
         [...values, id]
       );
 
-      res.json(result.rows[0]);
+
+      // Map database fields to frontend expected fields
+      const resource = {
+        ...result.rows[0],
+        file_size: result.rows[0].file_size_bytes
+      };
+
+      res.json(resource);
     } catch (error) {
       console.error('Error updating resource:', error);
       res.status(500).json({ 
@@ -240,15 +287,15 @@ router.put('/:id',
 );
 
 /**
- * DELETE /api/admin/resources/:id - Delete a resource
+ * DELETE /api/admin/resources/:id - Soft delete a resource
  */
 router.delete('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
 
-    // Check if resource exists
+    // Check if resource exists and get protection status
     const existingResource = await pool.query(
-      'SELECT id, file_url FROM resources WHERE id = $1', 
+      'SELECT id, protected, file_url FROM resources WHERE id = $1 AND deleted_at IS NULL', 
       [id]
     );
     if (existingResource.rows.length === 0) {
@@ -260,16 +307,42 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // TODO: Delete associated file from S3
-    // const resource = existingResource.rows[0];
-    // if (resource.file_url) await deleteFromS3(resource.file_url);
+    const resource = existingResource.rows[0];
 
-    // Delete the resource
-    await pool.query('DELETE FROM resources WHERE id = $1', [id]);
+    // Check if protected and user is not super admin
+    if (resource.protected && req.user?.role !== 'administrator') {
+      logger.warn('Regular admin attempted to delete protected content', {
+        userId: req.user?.userId,
+        userEmail: req.user?.email,
+        contentType: 'resource',
+        contentId: id
+      });
+      return res.status(403).json({ 
+        error: { 
+          message: 'Cannot delete protected content. Only super admins can delete protected items.', 
+          code: 'PROTECTED_CONTENT' 
+        } 
+      });
+    }
+
+    // Soft delete the resource
+    await pool.query(
+      'UPDATE resources SET deleted_at = NOW(), deleted_by = $1, updated_at = NOW() WHERE id = $2',
+      [req.user?.userId, id]
+    );
+
+    // Audit log
+    logger.info('Content soft deleted', {
+      contentType: 'resource',
+      contentId: id,
+      userId: req.user?.userId,
+      userEmail: req.user?.email,
+      protected: resource.protected
+    });
 
     res.status(204).send();
   } catch (error) {
-    console.error('Error deleting resource:', error);
+    logger.error('Error deleting resource:', error);
     res.status(500).json({ 
       error: { 
         message: 'Failed to delete resource', 

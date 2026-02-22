@@ -16,7 +16,7 @@ router.get('/', async (req: Request, res: Response) => {
       offset = '0'
     } = req.query;
     
-    let query = 'SELECT * FROM resources WHERE is_public = true';
+    let query = 'SELECT * FROM resources WHERE is_public = true AND deleted_at IS NULL';
     const params: any[] = [];
     let paramCount = 1;
 
@@ -39,7 +39,7 @@ router.get('/', async (req: Request, res: Response) => {
     const result = await pool.query(query, params);
 
     // Get total count
-    let countQuery = 'SELECT COUNT(*) FROM resources WHERE is_public = true';
+    let countQuery = 'SELECT COUNT(*) FROM resources WHERE is_public = true AND deleted_at IS NULL';
     const countParams: any[] = [];
     let countParamCount = 1;
 
@@ -83,7 +83,7 @@ router.get('/:slug', async (req: Request, res: Response) => {
     const { slug } = req.params;
 
     const result = await pool.query(
-      'SELECT * FROM resources WHERE slug = $1 AND is_public = true',
+      'SELECT * FROM resources WHERE slug = $1 AND is_public = true AND deleted_at IS NULL',
       [slug]
     );
 

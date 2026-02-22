@@ -47,6 +47,7 @@ const AdminArticlesPage = lazy(() => import('./pages/AdminArticlesPage'));
 const AdminEventsPage = lazy(() => import('./pages/AdminEventsPage'));
 const AdminResourcesPage = lazy(() => import('./pages/AdminResourcesPage'));
 const AdminEpisodesPage = lazy(() => import('./pages/AdminEpisodesPage'));
+const NewsPageDebug = lazy(() => import('./pages/NewsPageDebug'));
 
 function App() {
   return (
@@ -66,6 +67,7 @@ function App() {
               <Route path="/shows/:slug" element={<PageLayout><ShowDetailPage /></PageLayout>} />
               <Route path="/listen" element={<PageLayout><ListenPage /></PageLayout>} />
               <Route path="/news" element={<PageLayout><NewsPage /></PageLayout>} />
+              <Route path="/news-debug" element={<PageLayout><NewsPageDebug /></PageLayout>} />
               <Route path="/news/:slug" element={<PageLayout><ArticlePage /></PageLayout>} />
               <Route path="/events" element={<PageLayout><EventsPage /></PageLayout>} />
               <Route path="/get-involved" element={<PageLayout><GetInvolvedPage /></PageLayout>} />

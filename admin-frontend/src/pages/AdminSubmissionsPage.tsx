@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import { api } from 'shared';
+import { getAdminSubmissions, updateSubmissionStatus, deleteSubmission } from 'shared/services/api';
+import ErrorBoundary from '../components/ErrorBoundary';
+import DraftRestoreDialog from '../components/DraftRestoreDialog';
+import { useToastContext } from '../contexts/ToastContext';
+import { useAutoSave } from '../hooks/useAutoSave';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { Spinner } from '../components/Loading';
 import './AdminSubmissionsPage.css';
 
 interface Submission {
@@ -16,15 +22,29 @@ interface Submission {
   feedback?: string;
 }
 
-export default function AdminSubmissionsPage() {
+function AdminSubmissionsPageContent() {
+  const { addToast } = useToastContext();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [filteredSubmissions, setFilteredSubmissions] = useState<Submission[]>([]);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('pending');
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [submissionToDelete, setSubmissionToDelete] = useState<number | null>(null);
+  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+  const [showDraftDialog, setShowDraftDialog] = useState(false);
+
+  // Auto-save for review notes
+  const { restoreDraft, clearDraft, getDraftTimestamp } = useAutoSave({
+    formData: { feedback },
+    formId: `admin-submission-review-${selectedSubmission?.id || 'new'}`,
+    saveInterval: 30000,
+    enabled: selectedSubmission !== null
+  });
 
   useEffect(() => {
     fetchSubmissions();
@@ -35,16 +55,17 @@ export default function AdminSubmissionsPage() {
   }, [submissions, filterType, filterStatus]);
 
   const fetchSubmissions = async () => {
+    setIsLoading(true);
+    setError(null);
+    
     try {
-      const token = localStorage.getItem('token');
-      const response = await api.get('/admin/submissions', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      setSubmissions(response.data.submissions || []);
-    } catch (error) {
-      console.error('Error fetching submissions:', error);
+      const response = await getAdminSubmissions({ status: filterStatus !== 'all' ? filterStatus : undefined });
+      setSubmissions(response.submissions || []);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to load submissions';
+      setError(errorMessage);
+      addToast('error', errorMessage);
+      console.error('Error fetching submissions:', err);
     } finally {
       setIsLoading(false);
     }
@@ -69,23 +90,19 @@ export default function AdminSubmissionsPage() {
     setIsProcessing(true);
 
     try {
-      const token = localStorage.getItem('token');
-      await api.put(`/admin/submissions/${selectedSubmission.id}/approve`, {
-        feedback: feedback || undefined
-      }, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      await updateSubmissionStatus(selectedSubmission.id, 'approved');
 
       setSubmissions(submissions.map(s =>
         s.id === selectedSubmission.id ? { ...s, status: 'approved' as const } : s
       ));
+      addToast('success', `Submission from ${selectedSubmission.submitter_name} approved successfully`);
+      clearDraft();
       setSelectedSubmission(null);
       setFeedback('');
-    } catch (error) {
-      alert('Failed to approve submission');
-      console.error(error);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to approve submission';
+      addToast('error', errorMessage);
+      console.error('Error approving submission:', err);
     } finally {
       setIsProcessing(false);
     }
@@ -93,49 +110,72 @@ export default function AdminSubmissionsPage() {
 
   const handleReject = async () => {
     if (!selectedSubmission) return;
+    
+    // Show confirmation dialog for rejection
+    setShowRejectConfirm(true);
+  };
+
+  const confirmReject = async () => {
+    if (!selectedSubmission) return;
     setIsProcessing(true);
+    setShowRejectConfirm(false);
 
     try {
-      const token = localStorage.getItem('token');
-      await api.put(`/admin/submissions/${selectedSubmission.id}/reject`, {
-        feedback: feedback || undefined
-      }, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      await updateSubmissionStatus(selectedSubmission.id, 'rejected');
 
       setSubmissions(submissions.map(s =>
         s.id === selectedSubmission.id ? { ...s, status: 'rejected' as const } : s
       ));
+      addToast('success', `Submission from ${selectedSubmission.submitter_name} rejected`);
+      clearDraft();
       setSelectedSubmission(null);
       setFeedback('');
-    } catch (error) {
-      alert('Failed to reject submission');
-      console.error(error);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to reject submission';
+      addToast('error', errorMessage);
+      console.error('Error rejecting submission:', err);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this submission?')) return;
+  const handleDeleteClick = (id: number) => {
+    setSubmissionToDelete(id);
+    setShowDeleteConfirm(true);
+  };
 
+  const confirmDelete = async () => {
+    if (submissionToDelete === null) return;
+    
     try {
-      const token = localStorage.getItem('token');
-      await api.delete(`/admin/submissions/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      setSubmissions(submissions.filter(s => s.id !== id));
-      if (selectedSubmission?.id === id) {
+      await deleteSubmission(submissionToDelete);
+      setSubmissions(submissions.filter(s => s.id !== submissionToDelete));
+      if (selectedSubmission?.id === submissionToDelete) {
         setSelectedSubmission(null);
       }
-    } catch (error) {
-      alert('Failed to delete submission');
-      console.error(error);
+      addToast('success', 'Submission deleted successfully');
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to delete submission';
+      addToast('error', errorMessage);
+      console.error('Error deleting submission:', err);
+    } finally {
+      setShowDeleteConfirm(false);
+      setSubmissionToDelete(null);
     }
+  };
+
+  const handleRestoreDraft = () => {
+    const draft = restoreDraft();
+    if (draft && draft.feedback) {
+      setFeedback(draft.feedback);
+      addToast('info', 'Draft notes restored successfully');
+    }
+    setShowDraftDialog(false);
+  };
+
+  const handleStartFresh = () => {
+    clearDraft();
+    setShowDraftDialog(false);
   };
 
   const formatDate = (dateString: string) => {
@@ -158,7 +198,25 @@ export default function AdminSubmissionsPage() {
     return labels[type] || type;
   };
 
-  if (isLoading) return <div className="loading">Loading submissions...</div>;
+  if (isLoading) {
+    return (
+      <div className="loading-container">
+        <Spinner size="large" />
+        <p>Loading submissions...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="error-container">
+        <p className="error-message">{error}</p>
+        <button onClick={fetchSubmissions} className="btn-retry">
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-submissions-page">
@@ -212,7 +270,7 @@ export default function AdminSubmissionsPage() {
               <div className="detail-header">
                 <h2>{getTypeLabel(selectedSubmission.submission_type)} Submission</h2>
                 <button
-                  onClick={() => handleDelete(selectedSubmission.id)}
+                  onClick={() => handleDeleteClick(selectedSubmission.id)}
                   className="btn-delete-small"
                 >
                   Delete
@@ -300,6 +358,49 @@ export default function AdminSubmissionsPage() {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setSubmissionToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Delete Submission"
+        message="Are you sure you want to delete this submission? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
+
+      {/* Reject Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showRejectConfirm}
+        onClose={() => setShowRejectConfirm(false)}
+        onConfirm={confirmReject}
+        title="Reject Submission"
+        message={`Are you sure you want to reject the submission from ${selectedSubmission?.submitter_name}?`}
+        confirmText="Reject"
+        cancelText="Cancel"
+        variant="warning"
+        isLoading={isProcessing}
+      />
+
+      <DraftRestoreDialog
+        isOpen={showDraftDialog}
+        onRestore={handleRestoreDraft}
+        onStartFresh={handleStartFresh}
+        draftTimestamp={getDraftTimestamp() || Date.now()}
+      />
     </div>
+  );
+}
+
+export default function AdminSubmissionsPage() {
+  return (
+    <ErrorBoundary>
+      <AdminSubmissionsPageContent />
+    </ErrorBoundary>
   );
 }

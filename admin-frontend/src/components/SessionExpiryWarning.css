@@ -1,0 +1,146 @@
+/* Session Expiry Warning Modal */
+.session-warning-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9998;
+  animation: fadeIn 200ms ease-out;
+}
+
+.session-warning-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: var(--radius-lg, 8px);
+  box-shadow: var(--shadow-xl, 0 20px 25px -5px rgba(0, 0, 0, 0.1));
+  z-index: 9999;
+  max-width: 480px;
+  width: 90%;
+  animation: slideIn 200ms ease-out;
+}
+
+.session-warning-content {
+  padding: var(--space-8, 2rem);
+  text-align: center;
+}
+
+.session-warning-icon {
+  font-size: 3rem;
+  margin-bottom: var(--space-4, 1rem);
+}
+
+.session-warning-title {
+  font-size: var(--text-2xl, 1.5rem);
+  font-weight: var(--font-semibold, 600);
+  color: var(--color-text-primary, #111827);
+  margin: 0 0 var(--space-4, 1rem) 0;
+}
+
+.session-warning-description {
+  font-size: var(--text-lg, 1.125rem);
+  color: var(--color-text-secondary, #6b7280);
+  margin: 0 0 var(--space-4, 1rem) 0;
+}
+
+.session-warning-description strong {
+  color: var(--color-warning, #f59e0b);
+  font-weight: var(--font-bold, 700);
+  font-size: var(--text-xl, 1.25rem);
+}
+
+.session-warning-info {
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--color-text-secondary, #6b7280);
+  margin: 0 0 var(--space-6, 1.5rem) 0;
+  line-height: var(--leading-relaxed, 1.75);
+}
+
+.session-warning-actions {
+  display: flex;
+  gap: var(--space-3, 0.75rem);
+  justify-content: center;
+}
+
+.session-warning-actions button {
+  padding: var(--space-3, 0.75rem) var(--space-6, 1.5rem);
+  font-size: var(--text-base, 1rem);
+  font-weight: var(--font-medium, 500);
+  border-radius: var(--radius-md, 6px);
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-base, 200ms);
+  min-width: 140px;
+}
+
+.session-warning-actions .btn-primary {
+  background-color: var(--color-primary, #2563eb);
+  color: white;
+}
+
+.session-warning-actions .btn-primary:hover {
+  background-color: var(--color-primary-hover, #1d4ed8);
+}
+
+.session-warning-actions .btn-primary:focus {
+  outline: 2px solid var(--color-primary, #2563eb);
+  outline-offset: 2px;
+}
+
+.session-warning-actions .btn-secondary {
+  background-color: var(--color-gray-200, #e5e7eb);
+  color: var(--color-text-primary, #111827);
+}
+
+.session-warning-actions .btn-secondary:hover {
+  background-color: var(--color-gray-300, #d1d5db);
+}
+
+.session-warning-actions .btn-secondary:focus {
+  outline: 2px solid var(--color-gray-400, #9ca3af);
+  outline-offset: 2px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .session-warning-modal {
+    width: 95%;
+  }
+
+  .session-warning-content {
+    padding: var(--space-6, 1.5rem);
+  }
+
+  .session-warning-actions {
+    flex-direction: column;
+  }
+
+  .session-warning-actions button {
+    width: 100%;
+  }
+}

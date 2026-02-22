@@ -91,6 +91,30 @@ router.get('/',
 );
 
 /**
+ * GET /api/admin/submissions/pending-count - Get pending submissions count
+ */
+router.get('/pending-count', async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await pool.query(
+      `SELECT COUNT(*) FROM submissions WHERE status = 'pending'`
+    );
+
+    res.json({
+      pendingCount: parseInt(result.rows[0].count)
+    });
+
+  } catch (error) {
+    logger.error('Error fetching pending submissions count:', error);
+    res.status(500).json({
+      error: {
+        message: 'Failed to fetch pending count',
+        code: 'DATABASE_ERROR'
+      }
+    });
+  }
+});
+
+/**
  * GET /api/admin/submissions/:id - Get single submission by ID
  */
 router.get('/:id',

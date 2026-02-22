@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react';
 import ContentTable from '../components/ContentTable';
 import ContentModal from '../components/ContentModal';
+import ErrorBoundary from '../components/ErrorBoundary';
+import ConfirmDialog from '../components/ConfirmDialog';
+import DraftRestoreDialog from '../components/DraftRestoreDialog';
+import { Spinner } from '../components/Loading';
 import { FileUploader } from 'shared';
-import * as api from 'shared/services/api';
+import { getAdminShows, createShow, updateShow, deleteShow } from 'shared/services/api';
+import { useToastContext } from '../contexts/ToastContext';
+import { useAutoSave } from '../hooks/useAutoSave';
 import './AdminShowsPage.css';
 
 interface Show {
@@ -22,6 +28,7 @@ interface Show {
 }
 
 export default function AdminShowsPage() {
+  const { addToast } = useToastContext();
   const [shows, setShows] = useState<Show[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -34,6 +41,14 @@ export default function AdminShowsPage() {
   const [page, setPage] = useState(1);
   const limit = 20;
 
+  // Confirmation dialog state
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showToDelete, setShowToDelete] = useState<{ id: number; title: string; episodeCount?: number } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Draft restore dialog state
+  const [showDraftDialog, setShowDraftDialog] = useState(false);
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -43,6 +58,14 @@ export default function AdminShowsPage() {
     is_active: true,
     image_url: '',
     thumbnail_url: ''
+  });
+
+  // Auto-save hook - only enabled when modal is open
+  const { restoreDraft, clearDraft, hasDraft, getDraftTimestamp } = useAutoSave({
+    formData,
+    formId: 'admin-shows-form',
+    saveInterval: 30000, // 30 seconds
+    enabled: isModalOpen
   });
 
   useEffect(() => {
@@ -63,11 +86,14 @@ export default function AdminShowsPage() {
       if (searchTerm) params.search = searchTerm;
       if (statusFilter !== 'all') params.is_active = statusFilter === 'active';
 
-      const response = await api.getAdminShows(params);
+      const response = await getAdminShows(params);
       setShows(response.shows || []);
       setTotal(response.total || 0);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to load shows');
+      const errorMessage = err.response?.data?.error || 'Failed to load shows';
+      setError(errorMessage);
+      addToast('error', errorMessage);
+      console.error('Failed to fetch shows:', err);
     } finally {
       setLoading(false);
     }
@@ -75,7 +101,7 @@ export default function AdminShowsPage() {
 
   const handleCreate = () => {
     setEditingShow(null);
-    setFormData({
+    const initialFormData = {
       title: '',
       description: '',
       host_name: '',
@@ -84,8 +110,16 @@ export default function AdminShowsPage() {
       is_active: true,
       image_url: '',
       thumbnail_url: ''
-    });
+    };
+    setFormData(initialFormData);
     setIsModalOpen(true);
+
+    // Check for draft after modal opens
+    setTimeout(() => {
+      if (hasDraft()) {
+        setShowDraftDialog(true);
+      }
+    }, 100);
   };
 
   const handleEdit = (show: Show) => {
@@ -101,6 +135,9 @@ export default function AdminShowsPage() {
       thumbnail_url: show.thumbnail_url || ''
     });
     setIsModalOpen(true);
+    
+    // Clear any existing draft when editing (editing doesn't use drafts)
+    clearDraft();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -113,39 +150,92 @@ export default function AdminShowsPage() {
       const data = { ...formData, slug };
 
       if (editingShow) {
-        await api.updateShow(editingShow.id, data);
+        await updateShow(editingShow.id, data);
+        addToast('success', `Show "${formData.title}" updated successfully`);
       } else {
-        await api.createShow(data);
+        await createShow(data);
+        addToast('success', `Show "${formData.title}" created successfully`);
       }
 
+      // Clear draft after successful submission
+      clearDraft();
+      
       setIsModalOpen(false);
       fetchShows();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to save show');
+      const errorMessage = err.response?.data?.error || 'Failed to save show';
+      setError(errorMessage);
+      addToast('error', errorMessage);
+      console.error('Failed to save show:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id: number, title: string, episodeCount?: number) => {
+  const handleDeleteClick = (id: number, title: string, episodeCount?: number) => {
+    setShowToDelete({ id, title, episodeCount });
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!showToDelete) return;
+
+    const { id, title, episodeCount } = showToDelete;
+
+    // Check if show has episodes
     if (episodeCount && episodeCount > 0) {
-      alert(`Cannot delete "${title}" because it has ${episodeCount} episode${episodeCount > 1 ? 's' : ''}. Please delete the episodes first.`);
+      addToast('error', `Cannot delete "${title}" because it has ${episodeCount} episode${episodeCount > 1 ? 's' : ''}. Please delete the episodes first.`);
+      setShowConfirmDialog(false);
+      setShowToDelete(null);
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete "${title}"?`)) return;
+    // Store reference for potential rollback
+    const deletedItem = shows.find(s => s.id === id);
+    if (!deletedItem) return;
+    const deletedItemIndex = shows.findIndex(s => s.id === id);
+
+    setIsDeleting(true);
+
+    // OPTIMISTIC UPDATE: Remove from UI immediately
+    setShows(prevShows => prevShows.filter(s => s.id !== id));
+    setTotal(prevTotal => prevTotal - 1);
 
     try {
-      await api.deleteShow(id);
-      fetchShows();
+      // Backend deletion proceeds asynchronously
+      await deleteShow(id);
+      
+      // Success: Show confirmation toast
+      addToast('success', `Show "${title}" deleted successfully`);
+      setShowConfirmDialog(false);
+      setShowToDelete(null);
     } catch (err: any) {
-      const errorMsg = err.response?.data?.error || 'Failed to delete show';
+      // ROLLBACK: Restore item to original position
+      setShows(prevShows => {
+        const restored = [...prevShows];
+        restored.splice(deletedItemIndex, 0, deletedItem);
+        return restored;
+      });
+      setTotal(prevTotal => prevTotal + 1);
+      
+      // Show error notification
+      const errorMessage = err.response?.data?.error || 'Failed to delete show';
+      
+      // Check if error response indicates episodes exist
       if (err.response?.data?.episode_count) {
-        alert(`Cannot delete "${title}" because it has ${err.response.data.episode_count} episode(s). Please delete the episodes first.`);
+        addToast('error', `Cannot delete "${title}" because it has ${err.response.data.episode_count} episode(s). Please delete the episodes first.`);
       } else {
-        alert(errorMsg);
+        addToast('error', errorMessage);
       }
+      console.error('Failed to delete show:', err);
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setShowConfirmDialog(false);
+    setShowToDelete(null);
   };
 
   const handleImageUpload = (fileData: any) => {
@@ -156,22 +246,37 @@ export default function AdminShowsPage() {
     });
   };
 
+  const handleRestoreDraft = () => {
+    const draft = restoreDraft();
+    if (draft) {
+      setFormData(draft);
+      addToast('info', 'Draft restored successfully');
+    }
+    setShowDraftDialog(false);
+  };
+
+  const handleStartFresh = () => {
+    clearDraft();
+    setShowDraftDialog(false);
+  };
+
   const columns = [
     { key: 'title', label: 'Title', sortable: true },
-    { key: 'host_name', label: 'Host', sortable: true },
-    { key: 'category', label: 'Category', sortable: true },
-    { key: 'broadcast_schedule', label: 'Schedule', sortable: false },
+    { key: 'host_name', label: 'Host', sortable: true, hideOnMobile: true },
+    { key: 'category', label: 'Category', sortable: true, hideOnMobile: true },
+    { key: 'broadcast_schedule', label: 'Schedule', sortable: false, hideOnMobile: true },
     { 
       key: 'episode_count', 
       label: 'Episodes', 
       sortable: true,
-      render: (show: Show) => show.episode_count || 0
+      hideOnMobile: true,
+      render: (_value: any, show: Show) => show.episode_count || 0
     },
     { 
       key: 'is_active', 
       label: 'Status', 
       sortable: true,
-      render: (show: Show) => (
+      render: (_value: any, show: Show) => (
         <span className={`status-badge ${show.is_active ? 'active' : 'inactive'}`}>
           {show.is_active ? 'Active' : 'Inactive'}
         </span>
@@ -181,16 +286,17 @@ export default function AdminShowsPage() {
       key: 'created_at', 
       label: 'Created', 
       sortable: true,
-      render: (show: Show) => new Date(show.created_at).toLocaleDateString()
+      hideOnMobile: true,
+      render: (_value: any, show: Show) => new Date(show.created_at).toLocaleDateString()
     },
     {
       key: 'actions',
       label: 'Actions',
-      render: (show: Show) => (
+      render: (_value: any, show: Show) => (
         <div className="action-buttons">
-          <button onClick={() => handleEdit(show)} className="btn-edit">Edit</button>
+          <button onClick={(e) => { e.stopPropagation(); handleEdit(show); }} className="btn-edit">Edit</button>
           <button 
-            onClick={() => handleDelete(show.id, show.title, show.episode_count)} 
+            onClick={(e) => { e.stopPropagation(); handleDeleteClick(show.id, show.title, show.episode_count); }} 
             className="btn-delete"
           >
             Delete
@@ -201,159 +307,203 @@ export default function AdminShowsPage() {
   ];
 
   return (
-    <div className="admin-shows-page">
-      <div className="page-header">
-        <h1>Manage Shows</h1>
-        <button onClick={handleCreate} className="btn-primary">+ Create Show</button>
-      </div>
+    <ErrorBoundary>
+      <div className="admin-shows-page">
+        <div className="page-header">
+          <h1>Manage Shows</h1>
+          <button onClick={handleCreate} className="btn-primary">+ Create Show</button>
+        </div>
 
-      {error && <div className="error-message">{error}</div>}
+        <div className="filters">
+          <input
+            type="text"
+            placeholder="Search shows..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+          />
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
 
-      <div className="filters">
-        <input
-          type="text"
-          placeholder="Search shows..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="search-input"
-        />
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
-      </div>
-
-      <ContentTable
-        columns={columns}
-        data={shows}
-        loading={loading}
-        selectedRows={selectedRows}
-        onSelectRow={(row, selected) => {
-          const newSelected = new Set(selectedRows);
-          if (selected) {
-            newSelected.add(row.id);
-          } else {
-            newSelected.delete(row.id);
+        <ContentTable
+          columns={columns}
+          data={shows}
+          loading={loading}
+          error={error}
+          onRetry={fetchShows}
+          selectedRows={selectedRows}
+          onSelectRow={(row, selected) => {
+            const newSelected = new Set(selectedRows);
+            if (selected) {
+              newSelected.add(row.id);
+            } else {
+              newSelected.delete(row.id);
+            }
+            setSelectedRows(newSelected);
+          }}
+          selectable={true}
+          onRowClick={handleEdit}
+          stickyHeader={true}
+          emptyMessage="No shows found. Create your first show to get started."
+          emptyIcon={<span style={{ fontSize: '4rem' }}>🎙️</span>}
+          emptyAction={
+            <button onClick={() => setIsModalOpen(true)} className="btn-primary">
+              Create Show
+            </button>
           }
-          setSelectedRows(newSelected);
-        }}
-        selectable={true}
-        onRowClick={handleEdit}
-      />
+        />
 
-      <div className="pagination">
-        <button 
-          onClick={() => setPage(p => Math.max(1, p - 1))} 
-          disabled={page === 1}
+        <div className="pagination">
+          <button 
+            onClick={() => setPage(p => Math.max(1, p - 1))} 
+            disabled={page === 1}
+          >
+            Previous
+          </button>
+          <span>Page {page} of {Math.ceil(total / limit)}</span>
+          <button 
+            onClick={() => setPage(p => p + 1)} 
+            disabled={page >= Math.ceil(total / limit)}
+          >
+            Next
+          </button>
+        </div>
+
+        <ContentModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          title={editingShow ? 'Edit Show' : 'Create Show'}
+          size="large"
         >
-          Previous
-        </button>
-        <span>Page {page} of {Math.ceil(total / limit)}</span>
-        <button 
-          onClick={() => setPage(p => p + 1)} 
-          disabled={page >= Math.ceil(total / limit)}
-        >
-          Next
-        </button>
-      </div>
-
-      <ContentModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={editingShow ? 'Edit Show' : 'Create Show'}
-        size="large"
-      >
-        <form onSubmit={handleSubmit} className="show-form">
-          <div className="form-group">
-            <label>Title *</label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Host Name *</label>
-            <input
-              type="text"
-              value={formData.host_name}
-              onChange={(e) => setFormData({ ...formData, host_name: e.target.value })}
-              required
-            />
-          </div>
-
-          <div className="form-row">
+          <form onSubmit={handleSubmit} className="show-form">
             <div className="form-group">
-              <label>Category *</label>
+              <label>Title *</label>
               <input
                 type="text"
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 required
               />
             </div>
 
             <div className="form-group">
-              <label>Broadcast Schedule *</label>
+              <label>Host Name *</label>
               <input
                 type="text"
-                value={formData.broadcast_schedule}
-                onChange={(e) => setFormData({ ...formData, broadcast_schedule: e.target.value })}
-                placeholder="e.g., Mondays 8PM"
+                value={formData.host_name}
+                onChange={(e) => setFormData({ ...formData, host_name: e.target.value })}
                 required
               />
             </div>
-          </div>
 
-          <div className="form-group">
-            <label>Description *</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={4}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>
-              <input
-                type="checkbox"
-                checked={formData.is_active}
-                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-              />
-              {' '}Active
-            </label>
-          </div>
-
-          <div className="form-group">
-            <label>Cover Image</label>
-            <FileUploader
-              accept="image/*"
-              onUploadComplete={handleImageUpload}
-              maxSize={5 * 1024 * 1024}
-              type="image"
-            />
-            {formData.image_url && (
-              <div className="image-preview">
-                <img src={formData.image_url} alt="Preview" />
+            <div className="form-row">
+              <div className="form-group">
+                <label>Category *</label>
+                <input
+                  type="text"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  required
+                />
               </div>
-            )}
-          </div>
 
-          <div className="form-actions">
-            <button type="button" onClick={() => setIsModalOpen(false)} className="btn-secondary">
-              Cancel
-            </button>
-            <button type="submit" disabled={loading} className="btn-primary">
-              {loading ? 'Saving...' : editingShow ? 'Update' : 'Create'}
-            </button>
-          </div>
-        </form>
-      </ContentModal>
-    </div>
+              <div className="form-group">
+                <label>Broadcast Schedule *</label>
+                <input
+                  type="text"
+                  value={formData.broadcast_schedule}
+                  onChange={(e) => setFormData({ ...formData, broadcast_schedule: e.target.value })}
+                  placeholder="e.g., Mondays 8PM"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Description *</label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows={4}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={formData.is_active}
+                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                />
+                {' '}Active
+              </label>
+            </div>
+
+            <div className="form-group">
+              <label>Cover Image</label>
+              <FileUploader
+                accept="image/*"
+                onUploadComplete={handleImageUpload}
+                maxSize={5 * 1024 * 1024}
+                type="image"
+              />
+              {formData.image_url && (
+                <div className="image-preview">
+                  <img src={formData.image_url} alt="Preview" />
+                </div>
+              )}
+            </div>
+
+            <div className="form-actions">
+              <button type="button" onClick={() => setIsModalOpen(false)} className="btn-secondary">
+                Cancel
+              </button>
+              <button type="submit" disabled={loading} className="btn-primary">
+                {loading ? (
+                  <>
+                    <Spinner size="small" />
+                    <span style={{ marginLeft: '8px' }}>Saving...</span>
+                  </>
+                ) : (
+                  editingShow ? 'Update' : 'Create'
+                )}
+              </button>
+            </div>
+          </form>
+        </ContentModal>
+
+        <ConfirmDialog
+          isOpen={showConfirmDialog}
+          onClose={handleCancelDelete}
+          onConfirm={handleConfirmDelete}
+          title="Delete Show"
+          message={
+            showToDelete
+              ? `Are you sure you want to delete "${showToDelete.title}"? This action cannot be undone.${
+                  showToDelete.episodeCount && showToDelete.episodeCount > 0
+                    ? ` Note: This show has ${showToDelete.episodeCount} episode${showToDelete.episodeCount > 1 ? 's' : ''}.`
+                    : ''
+                }`
+              : ''
+          }
+          confirmText="Delete"
+          cancelText="Cancel"
+          variant="danger"
+          isLoading={isDeleting}
+        />
+
+        <DraftRestoreDialog
+          isOpen={showDraftDialog}
+          onRestore={handleRestoreDraft}
+          onStartFresh={handleStartFresh}
+          draftTimestamp={getDraftTimestamp() || Date.now()}
+        />
+      </div>
+    </ErrorBoundary>
   );
 }

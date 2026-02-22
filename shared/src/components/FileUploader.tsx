@@ -113,7 +113,7 @@ export default function FileUploader({
 
       const token = localStorage.getItem('auth_token');
       const response = await axios.post(
-        `${API_URL}/api/upload/${type}`,
+        `${API_URL}/upload/${type}`,
         formData,
         {
           headers: {

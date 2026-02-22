@@ -105,7 +105,12 @@ export const getArticles = async (params?: {
   sort?: string;
   order?: string;
 }) => {
+  console.log('[API] Fetching articles with params:', params);
+  console.log('[API] API_BASE_URL:', API_BASE_URL);
   const response = await api.get('/articles', { params });
+  console.log('[API] Response received:', response);
+  console.log('[API] Response data:', response.data);
+  console.log('[API] Articles array:', response.data.articles);
   return response.data.articles || [];
 };
 

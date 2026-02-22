@@ -16,7 +16,7 @@ router.get('/', async (req: Request, res: Response) => {
       offset = '0'
     } = req.query;
     
-    let query = 'SELECT * FROM events WHERE 1=1';
+    let query = 'SELECT * FROM events WHERE deleted_at IS NULL';
     const params: any[] = [];
     let paramCount = 1;
 
@@ -26,10 +26,11 @@ router.get('/', async (req: Request, res: Response) => {
       paramCount++;
     }
 
-    if (status) {
-      query += ` AND status = $${paramCount}`;
-      params.push(status);
-      paramCount++;
+    // Filter by upcoming/past based on start_time, not status column
+    if (status === 'upcoming') {
+      query += ` AND start_time >= NOW()`;
+    } else if (status === 'past') {
+      query += ` AND start_time < NOW()`;
     }
 
     // Sort upcoming events by start_time ASC, past events by start_time DESC
@@ -44,8 +45,8 @@ router.get('/', async (req: Request, res: Response) => {
 
     const result = await pool.query(query, params);
 
-    // Get total count
-    let countQuery = 'SELECT COUNT(*) FROM events WHERE 1=1';
+    // Get total count with same filters
+    let countQuery = 'SELECT COUNT(*) FROM events WHERE deleted_at IS NULL';
     const countParams: any[] = [];
     let countParamCount = 1;
 
@@ -55,9 +56,11 @@ router.get('/', async (req: Request, res: Response) => {
       countParamCount++;
     }
 
-    if (status) {
-      countQuery += ` AND status = $${countParamCount}`;
-      countParams.push(status);
+    // Filter by upcoming/past based on start_time
+    if (status === 'upcoming') {
+      countQuery += ` AND start_time >= NOW()`;
+    } else if (status === 'past') {
+      countQuery += ` AND start_time < NOW()`;
     }
 
     const countResult = await pool.query(countQuery, countParams);
@@ -89,7 +92,7 @@ router.get('/:slug', async (req: Request, res: Response) => {
     const { slug } = req.params;
 
     const result = await pool.query(
-      'SELECT * FROM events WHERE slug = $1',
+      'SELECT * FROM events WHERE slug = $1 AND deleted_at IS NULL',
       [slug]
     );
 

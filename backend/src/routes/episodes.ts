@@ -18,7 +18,7 @@ router.get('/', async (req: Request, res: Response) => {
       order = 'DESC'
     } = req.query;
     
-    let query = 'SELECT e.*, s.title as show_title, s.slug as show_slug FROM episodes e LEFT JOIN shows s ON e.show_id = s.id WHERE 1=1';
+    let query = 'SELECT e.*, s.title as show_title, s.slug as show_slug FROM episodes e LEFT JOIN shows s ON e.show_id = s.id WHERE e.deleted_at IS NULL AND (s.deleted_at IS NULL OR s.id IS NULL)';
     const params: any[] = [];
     let paramCount = 1;
 
@@ -47,7 +47,7 @@ router.get('/', async (req: Request, res: Response) => {
     const result = await pool.query(query, params);
 
     // Get total count
-    let countQuery = 'SELECT COUNT(*) FROM episodes WHERE 1=1';
+    let countQuery = 'SELECT COUNT(*) FROM episodes WHERE deleted_at IS NULL';
     const countParams: any[] = [];
     let countParamCount = 1;
 
@@ -94,7 +94,7 @@ router.get('/:slug', async (req: Request, res: Response) => {
       `SELECT e.*, s.title as show_title, s.slug as show_slug, s.host_name 
        FROM episodes e 
        LEFT JOIN shows s ON e.show_id = s.id 
-       WHERE e.slug = $1`,
+       WHERE e.slug = $1 AND e.deleted_at IS NULL AND (s.deleted_at IS NULL OR s.id IS NULL)`,
       [slug]
     );
 

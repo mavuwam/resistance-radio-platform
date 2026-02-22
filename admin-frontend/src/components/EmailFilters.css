@@ -1,0 +1,241 @@
+.email-filters {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+/* Filter Group */
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
+  white-space: nowrap;
+}
+
+/* Status Filter Dropdown */
+.status-filter-select {
+  padding: 8px 32px 8px 12px;
+  font-size: 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: white;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23475569' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  min-width: 140px;
+}
+
+.status-filter-select:hover {
+  border-color: #94a3b8;
+  background-color: #f8fafc;
+}
+
+.status-filter-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Highlight active filter */
+.status-filter-select.active {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+  color: #1e40af;
+  font-weight: 600;
+}
+
+/* Search Group */
+.search-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 250px;
+}
+
+.search-input-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+/* Search Input */
+.search-input {
+  width: 100%;
+  padding: 8px 36px 8px 12px;
+  font-size: 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: white;
+  color: #334155;
+  transition: all 0.2s;
+}
+
+.search-input::placeholder {
+  color: #94a3b8;
+}
+
+.search-input:hover {
+  border-color: #94a3b8;
+  background-color: #f8fafc;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background-color: white;
+}
+
+/* Clear Button */
+.clear-button {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.clear-button:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.clear-button:active {
+  background: #e2e8f0;
+}
+
+/* Search Button */
+.search-button {
+  padding: 8px 16px;
+  font-size: 16px;
+  border: 1px solid #3b82f6;
+  border-radius: 6px;
+  background: #3b82f6;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 38px;
+}
+
+.search-button:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+.search-button:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.search-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .email-filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .filter-group {
+    width: 100%;
+  }
+
+  .status-filter-select {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .search-group {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .email-filters {
+    padding: 12px;
+  }
+
+  .filter-label {
+    font-size: 13px;
+  }
+
+  .status-filter-select,
+  .search-input {
+    font-size: 13px;
+    padding: 7px 12px;
+  }
+
+  .status-filter-select {
+    padding-right: 28px;
+  }
+
+  .search-input {
+    padding-right: 32px;
+  }
+
+  .search-button {
+    font-size: 14px;
+    padding: 7px 12px;
+    min-width: 40px;
+    height: 34px;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .status-filter-select,
+  .search-input,
+  .clear-button,
+  .search-button {
+    transition: none;
+  }
+}
+
+/* Focus visible for keyboard navigation */
+.status-filter-select:focus-visible,
+.search-input:focus-visible,
+.clear-button:focus-visible,
+.search-button:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}

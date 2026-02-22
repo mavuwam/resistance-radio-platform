@@ -4,12 +4,22 @@
   background: white;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  max-height: 70vh; /* Allow scrolling for long tables */
+  position: relative;
 }
 
 .content-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.95rem;
+}
+
+/* Sticky header support */
+.content-table.sticky-header thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .content-table thead {
@@ -79,8 +89,8 @@
   cursor: pointer;
 }
 
-.content-table-loading,
-.content-table-empty {
+/* Error State */
+.content-table-error {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -89,28 +99,111 @@
   background: white;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  text-align: center;
 }
 
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f0f0f0;
-  border-top-color: #d4633f;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+.content-table-error .error-icon {
+  font-size: 3rem;
   margin-bottom: 1rem;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+.content-table-error h3 {
+  color: #ef4444;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.content-table-error p {
+  color: #666;
+  margin: 0 0 1.5rem 0;
+  font-size: 0.95rem;
+}
+
+.retry-button {
+  padding: 0.625rem 1.5rem;
+  background: #d4633f;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.retry-button:hover {
+  background: #c05535;
+}
+
+.retry-button:active {
+  transform: translateY(1px);
+}
+
+/* Skeleton Loading States */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
   }
 }
 
-.content-table-loading p,
+.skeleton-text {
+  height: 16px;
+  width: 80%;
+}
+
+.skeleton-checkbox {
+  height: 18px;
+  width: 18px;
+  border-radius: 3px;
+}
+
+/* Empty State */
+.content-table-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.empty-icon,
+.empty-icon-default {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.content-table-empty h3 {
+  color: #333;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
 .content-table-empty p {
-  color: #999;
-  font-size: 1rem;
+  color: #666;
+  margin: 0 0 1.5rem 0;
+  font-size: 0.95rem;
+  max-width: 400px;
+}
+
+.empty-action {
+  margin-top: 0.5rem;
 }
 
 /* Responsive */
@@ -126,5 +219,45 @@
 
   .content-table th {
     font-size: 0.8rem;
+  }
+  
+  /* Ensure table doesn't cause horizontal scroll */
+  .content-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Hide non-essential columns on mobile at 640px */
+@media (max-width: 640px) {
+  .hide-mobile {
+    display: none;
+  }
+
+  .content-table-empty {
+    padding: 3rem 1.5rem;
+  }
+
+  .empty-icon,
+  .empty-icon-default {
+    font-size: 3rem;
+  }
+
+  .content-table-error {
+    padding: 2rem 1.5rem;
+  }
+  
+  /* Stack table cells more compactly on very small screens */
+  .content-table th,
+  .content-table td {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.8rem;
+  }
+  
+  /* Ensure buttons in tables have proper touch targets */
+  .content-table button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.5rem;
   }
 }

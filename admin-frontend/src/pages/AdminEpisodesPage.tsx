@@ -2,8 +2,14 @@ import { useEffect, useState } from 'react';
 import ContentTable from '../components/ContentTable';
 import ContentModal from '../components/ContentModal';
 import RichTextEditor from '../components/RichTextEditor';
+import ErrorBoundary from '../components/ErrorBoundary';
+import ConfirmDialog from '../components/ConfirmDialog';
+import DraftRestoreDialog from '../components/DraftRestoreDialog';
+import { Spinner } from '../components/Loading';
 import { FileUploader } from 'shared';
-import * as api from 'shared/services/api';
+import { getShows, getAdminEpisodes, createEpisode, updateEpisode, deleteEpisode } from 'shared/services/api';
+import { useToastContext } from '../contexts/ToastContext';
+import { useAutoSave } from '../hooks/useAutoSave';
 import './AdminEpisodesPage.css';
 
 interface Episode {
@@ -28,6 +34,7 @@ interface Show {
 }
 
 export default function AdminEpisodesPage() {
+  const { addToast } = useToastContext();
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [shows, setShows] = useState<Show[]>([]);
   const [loading, setLoading] = useState(false);
@@ -41,6 +48,14 @@ export default function AdminEpisodesPage() {
   const [page, setPage] = useState(1);
   const limit = 20;
 
+  // Confirmation dialog state
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [episodeToDelete, setEpisodeToDelete] = useState<{ id: number; title: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Draft restore dialog state
+  const [showDraftDialog, setShowDraftDialog] = useState(false);
+
   const [formData, setFormData] = useState({
     show_id: 0,
     title: '',
@@ -51,6 +66,14 @@ export default function AdminEpisodesPage() {
     thumbnail_url: ''
   });
 
+  // Auto-save hook - only enabled when modal is open
+  const { restoreDraft, clearDraft, hasDraft, getDraftTimestamp } = useAutoSave({
+    formData,
+    formId: 'admin-episodes-form',
+    saveInterval: 30000,
+    enabled: isModalOpen
+  });
+
   useEffect(() => {
     fetchShows();
     fetchEpisodes();
@@ -58,10 +81,12 @@ export default function AdminEpisodesPage() {
 
   const fetchShows = async () => {
     try {
-      const response = await api.getShows();
+      const response = await getShows();
       setShows(response || []);
-    } catch (err) {
-      console.error('Failed to load shows:', err);
+    } catch (err: any) {
+      const errorMessage = 'Failed to load shows';
+      console.error('Failed to fetch shows:', err);
+      addToast('error', errorMessage);
     }
   };
 
@@ -79,11 +104,14 @@ export default function AdminEpisodesPage() {
       if (searchTerm) params.search = searchTerm;
       if (showFilter !== 'all') params.show_id = parseInt(showFilter);
 
-      const response = await api.getAdminEpisodes(params);
+      const response = await getAdminEpisodes(params);
       setEpisodes(response.episodes || []);
       setTotal(response.total || 0);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to load episodes');
+      const errorMessage = err.response?.data?.error || 'Failed to load episodes';
+      setError(errorMessage);
+      addToast('error', errorMessage);
+      console.error('Failed to fetch episodes:', err);
     } finally {
       setLoading(false);
     }
@@ -91,7 +119,7 @@ export default function AdminEpisodesPage() {
 
   const handleCreate = () => {
     setEditingEpisode(null);
-    setFormData({
+    const initialFormData = {
       show_id: 0,
       title: '',
       description: '',
@@ -99,8 +127,16 @@ export default function AdminEpisodesPage() {
       audio_url: '',
       duration: '',
       thumbnail_url: ''
-    });
+    };
+    setFormData(initialFormData);
     setIsModalOpen(true);
+
+    // Check for draft after modal opens
+    setTimeout(() => {
+      if (hasDraft()) {
+        setShowDraftDialog(true);
+      }
+    }, 100);
   };
 
   const handleEdit = (episode: Episode) => {
@@ -115,6 +151,9 @@ export default function AdminEpisodesPage() {
       thumbnail_url: episode.thumbnail_url || ''
     });
     setIsModalOpen(true);
+    
+    // Clear any existing draft when editing
+    clearDraft();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -131,29 +170,78 @@ export default function AdminEpisodesPage() {
       };
 
       if (editingEpisode) {
-        await api.updateEpisode(editingEpisode.id, data);
+        await updateEpisode(editingEpisode.id, data);
+        addToast('success', `Episode "${formData.title}" updated successfully`);
       } else {
-        await api.createEpisode(data);
+        await createEpisode(data);
+        addToast('success', `Episode "${formData.title}" created successfully`);
       }
+
+      // Clear draft after successful submission
+      clearDraft();
 
       setIsModalOpen(false);
       fetchEpisodes();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to save episode');
+      const errorMessage = err.response?.data?.error || 'Failed to save episode';
+      setError(errorMessage);
+      addToast('error', errorMessage);
+      console.error('Failed to save episode:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this episode?')) return;
+  const handleDeleteClick = (id: number, title: string) => {
+    setEpisodeToDelete({ id, title });
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!episodeToDelete) return;
+
+    const { id, title } = episodeToDelete;
+    
+    // Store reference for potential rollback
+    const deletedItem = episodes.find(e => e.id === id);
+    if (!deletedItem) return;
+    const deletedItemIndex = episodes.findIndex(e => e.id === id);
+
+    setIsDeleting(true);
+
+    // OPTIMISTIC UPDATE: Remove from UI immediately
+    setEpisodes(prevEpisodes => prevEpisodes.filter(e => e.id !== id));
+    setTotal(prevTotal => prevTotal - 1);
 
     try {
-      await api.deleteEpisode(id);
-      fetchEpisodes();
+      // Backend deletion proceeds asynchronously
+      await deleteEpisode(id);
+      
+      // Success: Show confirmation toast
+      addToast('success', `Episode "${title}" deleted successfully`);
+      setShowConfirmDialog(false);
+      setEpisodeToDelete(null);
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to delete episode');
+      // ROLLBACK: Restore item to original position
+      setEpisodes(prevEpisodes => {
+        const restored = [...prevEpisodes];
+        restored.splice(deletedItemIndex, 0, deletedItem);
+        return restored;
+      });
+      setTotal(prevTotal => prevTotal + 1);
+      
+      // Show error notification
+      const errorMessage = err.response?.data?.error || 'Failed to delete episode';
+      addToast('error', errorMessage);
+      console.error('Failed to delete episode:', err);
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setShowConfirmDialog(false);
+    setEpisodeToDelete(null);
   };
 
   const handleAudioUpload = (fileData: any) => {
@@ -170,6 +258,20 @@ export default function AdminEpisodesPage() {
     });
   };
 
+  const handleRestoreDraft = () => {
+    const draft = restoreDraft();
+    if (draft) {
+      setFormData(draft);
+      addToast('info', 'Draft restored successfully');
+    }
+    setShowDraftDialog(false);
+  };
+
+  const handleStartFresh = () => {
+    clearDraft();
+    setShowDraftDialog(false);
+  };
+
   const columns = [
     { key: 'title', label: 'Title', sortable: true },
     { key: 'show_title', label: 'Show', sortable: true },
@@ -179,25 +281,26 @@ export default function AdminEpisodesPage() {
       key: 'created_at', 
       label: 'Created', 
       sortable: true,
-      render: (episode: Episode) => new Date(episode.created_at).toLocaleDateString()
+      render: (_value: any, episode: Episode) => new Date(episode.created_at).toLocaleDateString()
     },
     {
       key: 'actions',
       label: 'Actions',
-      render: (episode: Episode) => (
+      render: (_value: any, episode: Episode) => (
         <div className="action-buttons">
-          <button onClick={() => handleEdit(episode)} className="btn-edit">Edit</button>
-          <a href={episode.audio_url} target="_blank" rel="noopener noreferrer" className="btn-play">
+          <button onClick={(e) => { e.stopPropagation(); handleEdit(episode); }} className="btn-edit">Edit</button>
+          <a href={episode.audio_url} target="_blank" rel="noopener noreferrer" className="btn-play" onClick={(e) => e.stopPropagation()}>
             Play
           </a>
-          <button onClick={() => handleDelete(episode.id)} className="btn-delete">Delete</button>
+          <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(episode.id, episode.title); }} className="btn-delete">Delete</button>
         </div>
       )
     }
   ];
 
   return (
-    <div className="admin-episodes-page">
+    <ErrorBoundary>
+      <div className="admin-episodes-page">
       <div className="page-header">
         <h1>Manage Episodes</h1>
         <button onClick={handleCreate} className="btn-primary">+ Create Episode</button>
@@ -351,11 +454,42 @@ export default function AdminEpisodesPage() {
               Cancel
             </button>
             <button type="submit" disabled={loading} className="btn-primary">
-              {loading ? 'Saving...' : editingEpisode ? 'Update' : 'Create'}
+              {loading ? (
+                <>
+                  <Spinner size="small" />
+                  <span style={{ marginLeft: '8px' }}>Saving...</span>
+                </>
+              ) : (
+                editingEpisode ? 'Update' : 'Create'
+              )}
             </button>
           </div>
         </form>
       </ContentModal>
+
+      <ConfirmDialog
+        isOpen={showConfirmDialog}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        title="Delete Episode"
+        message={
+          episodeToDelete
+            ? `Are you sure you want to delete "${episodeToDelete.title}"? This action cannot be undone.`
+            : ''
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={isDeleting}
+      />
+
+      <DraftRestoreDialog
+        isOpen={showDraftDialog}
+        onRestore={handleRestoreDraft}
+        onStartFresh={handleStartFresh}
+        draftTimestamp={getDraftTimestamp() || Date.now()}
+      />
     </div>
+    </ErrorBoundary>
   );
 }

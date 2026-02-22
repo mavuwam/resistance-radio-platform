@@ -14,6 +14,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
+  refreshToken: () => Promise<void>;
+  getTokenExpiry: () => number | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
   isLoading: boolean;
@@ -88,12 +90,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     delete axios.defaults.headers.common['Authorization'];
   };
 
+  const refreshToken = async () => {
+    // TODO: Implement backend /api/auth/refresh endpoint
+    // For now, this is a placeholder that would call the backend
+    // to get a new token with extended expiry
+    
+    try {
+      // When backend endpoint is available:
+      // const response = await axios.post(`${API_URL}/auth/refresh`);
+      // const { token: newToken, user: newUser } = response.data;
+      // setToken(newToken);
+      // setUser(newUser);
+      // localStorage.setItem('auth_token', newToken);
+      // localStorage.setItem('auth_user', JSON.stringify(newUser));
+      // axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+      
+      console.log('Token refresh requested - backend endpoint not yet implemented');
+    } catch (error) {
+      console.error('Failed to refresh token:', error);
+      throw error;
+    }
+  };
+
+  const getTokenExpiry = (): number | null => {
+    if (!token) return null;
+    
+    try {
+      const base64Url = token.split('.')[1];
+      if (!base64Url) return null;
+      
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      const decoded = JSON.parse(jsonPayload);
+      
+      // Return expiry time in milliseconds
+      return decoded.exp ? decoded.exp * 1000 : null;
+    } catch (error) {
+      console.error('Failed to decode token:', error);
+      return null;
+    }
+  };
+
   const value = {
     user,
     token,
     login,
     register,
     logout,
+    refreshToken,
+    getTokenExpiry,
     isAuthenticated: !!token,
     isAdmin: user?.role === 'administrator' || user?.role === 'content_manager',
     isLoading

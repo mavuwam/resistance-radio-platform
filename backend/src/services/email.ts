@@ -349,3 +349,140 @@ export async function sendPasswordResetEmail(email: string, resetToken: string):
     html
   });
 }
+
+/**
+ * Password change confirmation email
+ * 
+ * Requirements:
+ * - Include timestamp of password change (7.2)
+ * - Include instructions for reporting unauthorized changes (7.3)
+ * - Handle email failures gracefully (7.6)
+ */
+export async function sendPasswordChangeConfirmation(email: string, name: string): Promise<void> {
+  const timestamp = new Date().toLocaleString('en-US', {
+    dateStyle: 'full',
+    timeStyle: 'long',
+    timeZone: 'UTC'
+  });
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #0d0d0d; color: #ffffff; padding: 20px; text-align: center; }
+        .content { padding: 30px 20px; background: #ffffff; }
+        .info-box { background: #e8f5e9; padding: 15px; border-left: 3px solid #4caf50; margin: 20px 0; }
+        .warning { background: #fff3cd; padding: 15px; border-left: 3px solid #f7b731; margin: 20px 0; }
+        .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Resistance Radio</h1>
+        </div>
+        <div class="content">
+          <h2>Password Changed Successfully</h2>
+          <p>Hello ${name},</p>
+          <p>This email confirms that your password was successfully changed.</p>
+          <div class="info-box">
+            <strong>Change Details:</strong>
+            <p style="margin: 5px 0;"><strong>Time:</strong> ${timestamp}</p>
+            <p style="margin: 5px 0;"><strong>Account:</strong> ${email}</p>
+          </div>
+          <div class="warning">
+            <strong>Didn't make this change?</strong>
+            <p>If you did not authorize this password change, your account may have been compromised. Please take the following steps immediately:</p>
+            <ol style="margin: 10px 0; padding-left: 20px;">
+              <li>Contact our support team at <a href="mailto:security@resistanceradio.org">security@resistanceradio.org</a></li>
+              <li>Reset your password immediately</li>
+              <li>Review your account activity for any unauthorized access</li>
+            </ol>
+          </div>
+          <p>If you made this change, no further action is required. Your account is secure.</p>
+        </div>
+        <div class="footer">
+          <p>&copy; 2026 Resistance Radio. All rights reserved.</p>
+          <p>This is an automated security notification.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  await sendEmail({
+    to: email,
+    subject: 'Password Changed - Resistance Radio',
+    html
+  });
+}
+
+/**
+ * Password reset completion confirmation email
+ * 
+ * Requirements:
+ * - Include warning that reset link has been used (7.5)
+ * - Handle email failures gracefully (7.6)
+ */
+export async function sendPasswordResetConfirmation(email: string, name: string): Promise<void> {
+  const timestamp = new Date().toLocaleString('en-US', {
+    dateStyle: 'full',
+    timeStyle: 'long',
+    timeZone: 'UTC'
+  });
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #0d0d0d; color: #ffffff; padding: 20px; text-align: center; }
+        .content { padding: 30px 20px; background: #ffffff; }
+        .success-box { background: #e8f5e9; padding: 15px; border-left: 3px solid #4caf50; margin: 20px 0; }
+        .info-box { background: #e3f2fd; padding: 15px; border-left: 3px solid #2196f3; margin: 20px 0; }
+        .warning { background: #fff3cd; padding: 15px; border-left: 3px solid #f7b731; margin: 20px 0; }
+        .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Resistance Radio</h1>
+        </div>
+        <div class="content">
+          <h2>Password Reset Complete</h2>
+          <p>Hello ${name},</p>
+          <div class="success-box">
+            <strong>✓ Your password has been successfully reset</strong>
+            <p style="margin: 5px 0;">Time: ${timestamp}</p>
+          </div>
+          <p>You can now log in to your account using your new password.</p>
+          <div class="info-box">
+            <strong>Important Security Information:</strong>
+            <p>The password reset link you used is now invalid and cannot be used again. If you need to reset your password in the future, you'll need to request a new reset link.</p>
+          </div>
+          <div class="warning">
+            <strong>Didn't request this reset?</strong>
+            <p>If you did not request this password reset, your account may have been compromised. Please contact our security team immediately at <a href="mailto:security@resistanceradio.org">security@resistanceradio.org</a>.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <p>&copy; 2026 Resistance Radio. All rights reserved.</p>
+          <p>This is an automated security notification.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  await sendEmail({
+    to: email,
+    subject: 'Password Reset Complete - Resistance Radio',
+    html
+  });
+}

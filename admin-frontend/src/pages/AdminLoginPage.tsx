@@ -1,15 +1,35 @@
-import { useState, FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, FormEvent, useEffect } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from 'shared';
 import './AdminLoginPage.css';
+
+const RETURN_URL_KEY = 'admin_return_url';
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check for success message from password reset
+  useEffect(() => {
+    if (location.state?.message) {
+      setSuccessMessage(location.state.message);
+      // Clear the state
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
+
+  // Clear return URL on mount if user is already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      localStorage.removeItem(RETURN_URL_KEY);
+    }
+  }, [isAuthenticated]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -18,7 +38,15 @@ export default function AdminLoginPage() {
 
     try {
       await login(email, password);
-      navigate('/admin/dashboard');
+      
+      // Check for return URL
+      const returnUrl = localStorage.getItem(RETURN_URL_KEY);
+      if (returnUrl) {
+        localStorage.removeItem(RETURN_URL_KEY);
+        navigate(returnUrl);
+      } else {
+        navigate('/admin/dashboard');
+      }
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Login failed. Please check your credentials.');
     } finally {
@@ -35,6 +63,12 @@ export default function AdminLoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="admin-login-form">
+          {successMessage && (
+            <div className="success-message">
+              {successMessage}
+            </div>
+          )}
+
           {error && (
             <div className="error-message">
               {error}
@@ -74,6 +108,10 @@ export default function AdminLoginPage() {
           >
             {isLoading ? 'Logging in...' : 'Login'}
           </button>
+
+          <div className="forgot-password-link">
+            <Link to="/forgot-password">Forgot your password?</Link>
+          </div>
         </form>
 
         <div className="admin-login-footer">

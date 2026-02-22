@@ -1,0 +1,192 @@
+/* Draft Restore Dialog Overlay */
+.draft-restore-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Draft Restore Dialog */
+.draft-restore-dialog {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-width: 500px;
+  width: 90%;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Dialog Header */
+.draft-restore-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.draft-restore-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.draft-icon {
+  color: #3b82f6;
+  flex-shrink: 0;
+}
+
+/* Dialog Body */
+.draft-restore-body {
+  padding: 24px;
+}
+
+.draft-restore-body p {
+  margin: 0 0 12px;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+.draft-restore-body p:last-child {
+  margin-bottom: 0;
+}
+
+.draft-restore-body strong {
+  color: #111827;
+  font-weight: 600;
+}
+
+/* Dialog Actions */
+.draft-restore-actions {
+  display: flex;
+  gap: 12px;
+  padding: 16px 24px 24px;
+  justify-content: flex-end;
+}
+
+.draft-restore-actions button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.draft-restore-actions .btn-secondary {
+  background-color: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.draft-restore-actions .btn-secondary:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.draft-restore-actions .btn-primary {
+  background-color: #2563eb;
+  color: white;
+}
+
+.draft-restore-actions .btn-primary:hover {
+  background-color: #1d4ed8;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .draft-restore-dialog {
+    width: 95%;
+    margin: 16px;
+  }
+
+  .draft-restore-header {
+    padding: 20px 20px 12px;
+  }
+
+  .draft-restore-header h3 {
+    font-size: 1.125rem;
+  }
+
+  .draft-restore-body {
+    padding: 20px;
+  }
+
+  .draft-restore-actions {
+    flex-direction: column-reverse;
+    padding: 12px 20px 20px;
+  }
+
+  .draft-restore-actions button {
+    width: 100%;
+  }
+}
+
+/* Accessibility */
+.draft-restore-dialog:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+  .draft-restore-dialog {
+    background: #1f2937;
+  }
+
+  .draft-restore-header {
+    border-bottom-color: #374151;
+  }
+
+  .draft-restore-header h3 {
+    color: #f9fafb;
+  }
+
+  .draft-restore-body p {
+    color: #d1d5db;
+  }
+
+  .draft-restore-body strong {
+    color: #f9fafb;
+  }
+
+  .draft-restore-actions .btn-secondary {
+    background-color: #374151;
+    color: #f9fafb;
+    border-color: #4b5563;
+  }
+
+  .draft-restore-actions .btn-secondary:hover {
+    background-color: #4b5563;
+    border-color: #6b7280;
+  }
+}

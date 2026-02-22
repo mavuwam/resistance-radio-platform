@@ -6,6 +6,7 @@ interface Column {
   label: string;
   sortable?: boolean;
   render?: (value: any, row: any) => ReactNode;
+  hideOnMobile?: boolean; // New: hide column on mobile
 }
 
 interface ContentTableProps {
@@ -20,6 +21,11 @@ interface ContentTableProps {
   selectable?: boolean;
   loading?: boolean;
   emptyMessage?: string;
+  error?: string; // New: error message
+  onRetry?: () => void; // New: retry handler
+  emptyIcon?: ReactNode; // New: custom empty state icon
+  emptyAction?: ReactNode; // New: custom empty state action
+  stickyHeader?: boolean; // New: sticky header for long tables
 }
 
 export default function ContentTable({
@@ -33,7 +39,12 @@ export default function ContentTable({
   selectedRows = new Set(),
   selectable = false,
   loading = false,
-  emptyMessage = 'No data available'
+  emptyMessage = 'No data available',
+  error,
+  onRetry,
+  emptyIcon,
+  emptyAction,
+  stickyHeader = false
 }: ContentTableProps) {
   const handleSort = (key: string) => {
     if (!onSort) return;
@@ -50,26 +61,74 @@ export default function ContentTable({
 
   const allSelected = data.length > 0 && data.every(row => selectedRows.has(row.id));
 
-  if (loading) {
+  // Error state
+  if (error) {
     return (
-      <div className="content-table-loading">
-        <div className="loading-spinner"></div>
-        <p>Loading...</p>
+      <div className="content-table-error">
+        <div className="error-icon">⚠️</div>
+        <h3>Error Loading Data</h3>
+        <p>{error}</p>
+        {onRetry && (
+          <button onClick={onRetry} className="retry-button">
+            Try Again
+          </button>
+        )}
       </div>
     );
   }
 
+  // Loading state with improved skeleton
+  if (loading) {
+    return (
+      <div className="content-table-wrapper">
+        <table className="content-table">
+          <thead>
+            <tr>
+              {selectable && <th className="col-checkbox"></th>}
+              {columns.map(column => (
+                <th key={column.key} className={column.hideOnMobile ? 'hide-mobile' : ''}>
+                  <div className="skeleton skeleton-text"></div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {[...Array(5)].map((_, i) => (
+              <tr key={i}>
+                {selectable && (
+                  <td className="col-checkbox">
+                    <div className="skeleton skeleton-checkbox"></div>
+                  </td>
+                )}
+                {columns.map(column => (
+                  <td key={column.key} className={column.hideOnMobile ? 'hide-mobile' : ''}>
+                    <div className="skeleton skeleton-text"></div>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  // Empty state with icon and action
   if (data.length === 0) {
     return (
       <div className="content-table-empty">
+        {emptyIcon && <div className="empty-icon">{emptyIcon}</div>}
+        {!emptyIcon && <div className="empty-icon-default">📋</div>}
+        <h3>No Data Found</h3>
         <p>{emptyMessage}</p>
+        {emptyAction && <div className="empty-action">{emptyAction}</div>}
       </div>
     );
   }
 
   return (
     <div className="content-table-wrapper">
-      <table className="content-table">
+      <table className={`content-table ${stickyHeader ? 'sticky-header' : ''}`}>
         <thead>
           <tr>
             {selectable && (
@@ -85,7 +144,7 @@ export default function ContentTable({
             {columns.map(column => (
               <th
                 key={column.key}
-                className={column.sortable ? 'sortable' : ''}
+                className={`${column.sortable ? 'sortable' : ''} ${column.hideOnMobile ? 'hide-mobile' : ''}`}
                 onClick={() => column.sortable && handleSort(column.key)}
               >
                 <div className="th-content">
@@ -118,7 +177,7 @@ export default function ContentTable({
                 </td>
               )}
               {columns.map(column => (
-                <td key={column.key}>
+                <td key={column.key} className={column.hideOnMobile ? 'hide-mobile' : ''}>
                   {column.render
                     ? column.render(row[column.key], row)
                     : row[column.key]}

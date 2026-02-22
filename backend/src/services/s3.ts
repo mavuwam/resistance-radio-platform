@@ -3,13 +3,13 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
 import path from 'path';
 
-// Initialize S3 client
+// Initialize S3 client - will automatically use AWS CLI credentials
+// The SDK will check credentials in this order:
+// 1. Environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+// 2. AWS CLI credentials file (~/.aws/credentials)
+// 3. IAM role (if running on EC2/ECS/Lambda)
 const s3Client = new S3Client({
-  region: process.env.AWS_REGION || 'us-east-1',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || ''
-  }
+  region: process.env.AWS_REGION || 'us-east-1'
 });
 
 const MEDIA_BUCKET = process.env.AWS_S3_MEDIA_BUCKET || 'resistance-radio-media-dev-734110488556';

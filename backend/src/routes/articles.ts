@@ -17,7 +17,7 @@ router.get('/', async (req: Request, res: Response) => {
       order = 'DESC'
     } = req.query;
     
-    let query = "SELECT * FROM articles WHERE status = 'published' AND published_at <= NOW()";
+    let query = "SELECT * FROM articles WHERE status = 'published' AND published_at <= NOW() AND deleted_at IS NULL";
     const params: any[] = [];
     let paramCount = 1;
 
@@ -40,7 +40,7 @@ router.get('/', async (req: Request, res: Response) => {
     const result = await pool.query(query, params);
 
     // Get total count
-    let countQuery = "SELECT COUNT(*) FROM articles WHERE status = 'published' AND published_at <= NOW()";
+    let countQuery = "SELECT COUNT(*) FROM articles WHERE status = 'published' AND published_at <= NOW() AND deleted_at IS NULL";
     const countParams: any[] = [];
     let countParamCount = 1;
 
@@ -78,7 +78,7 @@ router.get('/:slug', async (req: Request, res: Response) => {
     const { slug } = req.params;
 
     const result = await pool.query(
-      "SELECT * FROM articles WHERE slug = $1 AND status = 'published' AND published_at <= NOW()",
+      "SELECT * FROM articles WHERE slug = $1 AND status = 'published' AND published_at <= NOW() AND deleted_at IS NULL",
       [slug]
     );
 

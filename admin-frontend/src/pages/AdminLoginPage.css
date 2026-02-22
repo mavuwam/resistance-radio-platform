@@ -77,6 +77,15 @@
   font-size: 0.9rem;
 }
 
+.success-message {
+  background-color: #d1fae5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  padding: 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
 .btn-primary {
   background-color: #ff6b35;
   color: #ffffff;
@@ -96,6 +105,24 @@
 .btn-primary:disabled {
   background-color: #ccc;
   cursor: not-allowed;
+}
+
+.forgot-password-link {
+  text-align: center;
+  margin-top: -0.5rem;
+}
+
+.forgot-password-link a {
+  color: #3b82f6;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.forgot-password-link a:hover {
+  color: #2563eb;
+  text-decoration: underline;
 }
 
 .admin-login-footer {

@@ -7,6 +7,8 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { initSentry } from './services/sentry';
+import { scheduleCleanupJob } from './jobs/cleanup-trash';
+import { scheduleEmailCleanup } from './jobs/cleanup-deleted-emails';
 
 dotenv.config();
 
@@ -22,12 +24,17 @@ import eventsRoutes from './routes/events';
 import resourcesRoutes from './routes/resources';
 import liveRoutes from './routes/live';
 import submissionsRoutes from './routes/submissions';
+import mailboxRoutes from './routes/mailbox';
 import adminSubmissionsRoutes from './routes/admin/submissions';
 import adminArticlesRoutes from './routes/admin/articles';
 import adminEventsRoutes from './routes/admin/events';
 import adminResourcesRoutes from './routes/admin/resources';
 import adminEpisodesRoutes from './routes/admin/episodes';
 import adminShowsRoutes from './routes/admin/shows';
+import adminDashboardRoutes from './routes/admin/dashboard';
+import adminTrashRoutes from './routes/admin/trash';
+import adminMailboxRoutes from './routes/admin/mailbox';
+import adminPasswordRoutes from './routes/admin/password';
 import sitemapRoutes from './routes/sitemap';
 import uploadRoutes from './routes/upload';
 import {
@@ -87,7 +94,8 @@ const allowedOrigins = [
   process.env.FRONTEND_URL || 'http://localhost:5173',
   'https://resistanceradiostation.org',
   'https://dxbqjcig99tjb.cloudfront.net',
-  'http://localhost:5173'
+  'http://localhost:5173',
+  'http://localhost:5174'
 ];
 
 app.use(cors({
@@ -145,12 +153,17 @@ app.use('/api/events', eventsRoutes);
 app.use('/api/resources', resourcesRoutes);
 app.use('/api/live', liveRoutes);
 app.use('/api/submissions', submissionsRoutes); // Already has rate limiting in the route
+app.use('/api/mailbox', mailboxRoutes); // Email webhook endpoint (public)
 app.use('/api/admin/submissions', adminSubmissionsRoutes);
 app.use('/api/admin/articles', adminArticlesRoutes);
 app.use('/api/admin/events', adminEventsRoutes);
 app.use('/api/admin/resources', adminResourcesRoutes);
 app.use('/api/admin/episodes', adminEpisodesRoutes);
 app.use('/api/admin/shows', adminShowsRoutes);
+app.use('/api/admin/dashboard', adminDashboardRoutes);
+app.use('/api/admin/trash', adminTrashRoutes);
+app.use('/api/admin/mailbox', adminMailboxRoutes);
+app.use('/api/admin/password', adminPasswordRoutes);
 app.use('/api/upload', uploadRoutes);
 
 // Sitemap (no /api prefix)
@@ -172,6 +185,10 @@ if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
     logger.info(`Server running on port ${PORT}`);
     logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    
+    // Schedule cleanup jobs
+    scheduleCleanupJob();
+    scheduleEmailCleanup();
   });
 }
 

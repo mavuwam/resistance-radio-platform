@@ -4,14 +4,20 @@ import path from 'path';
 import sharp from 'sharp';
 import logger from '../utils/logger';
 
-// Initialize S3 client
-const s3Client = new S3Client({
-  region: process.env.AWS_REGION || 'us-east-1',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || ''
-  }
-});
+// Initialize S3 client with profile support
+const s3ClientConfig: any = {
+  region: process.env.AWS_REGION || 'us-east-1'
+};
+
+// Use environment credentials if available
+if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+  s3ClientConfig.credentials = {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+  };
+}
+
+const s3Client = new S3Client(s3ClientConfig);
 
 const MEDIA_BUCKET = process.env.AWS_S3_MEDIA_BUCKET || 'resistance-radio-media-dev-734110488556';
 const CDN_URL = process.env.CDN_URL || 'https://dxbqjcig99tjb.cloudfront.net';

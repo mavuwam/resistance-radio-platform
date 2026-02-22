@@ -2,6 +2,7 @@ import express, { Response } from 'express';
 import pool from '../../db/connection';
 import { authMiddleware, requireRole, AuthRequest } from '../../middleware/auth';
 import { body, validationResult } from 'express-validator';
+import logger from '../../utils/logger';
 
 const router = express.Router();
 
@@ -24,7 +25,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
       order = 'DESC'
     } = req.query;
     
-    let query = 'SELECT * FROM articles WHERE 1=1';
+    let query = 'SELECT * FROM articles WHERE deleted_at IS NULL';
     const params: any[] = [];
     let paramCount = 1;
 
@@ -62,7 +63,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     const result = await pool.query(query, params);
 
     // Get total count with same filters
-    let countQuery = 'SELECT COUNT(*) FROM articles WHERE 1=1';
+    let countQuery = 'SELECT COUNT(*) FROM articles WHERE deleted_at IS NULL';
     const countParams: any[] = [];
     let countParamCount = 1;
 
@@ -86,9 +87,16 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 
     const countResult = await pool.query(countQuery, countParams);
 
+    // Map database fields to frontend expected fields
+    const articles = result.rows.map(row => ({
+      ...row,
+      author: row.author_name,
+      image_url: row.featured_image_url
+    }));
+
     res.json({
-      articles: result.rows,
-      count: result.rows.length,
+      articles,
+      count: articles.length,
       total: parseInt(countResult.rows[0].count),
       limit: parseInt(limit as string),
       offset: parseInt(offset as string)
@@ -111,7 +119,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
 
-    const result = await pool.query('SELECT * FROM articles WHERE id = $1', [id]);
+    const result = await pool.query('SELECT * FROM articles WHERE id = $1 AND deleted_at IS NULL', [id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({
@@ -122,7 +130,14 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
       });
     }
 
-    res.json(result.rows[0]);
+    // Map database fields to frontend expected fields
+    const article = {
+      ...result.rows[0],
+      author: result.rows[0].author_name,
+      image_url: result.rows[0].featured_image_url
+    };
+
+    res.json(article);
   } catch (error) {
     console.error('Error fetching article:', error);
     res.status(500).json({
@@ -147,8 +162,7 @@ router.post('/',
     body('category').optional().trim(),
     body('status').isIn(['draft', 'published']).withMessage('Invalid status'),
     body('published_at').optional().isISO8601().withMessage('Invalid date format'),
-    body('image_url').optional().trim(),
-    body('thumbnail_url').optional().trim()
+    body('image_url').optional().trim()
   ],
   async (req: AuthRequest, res: Response) => {
     try {
@@ -166,12 +180,11 @@ router.post('/',
         category, 
         status, 
         published_at,
-        image_url,
-        thumbnail_url
+        image_url
       } = req.body;
 
-      // Check if slug already exists
-      const existingArticle = await pool.query('SELECT id FROM articles WHERE slug = $1', [slug]);
+      // Check if slug already exists (excluding soft-deleted articles)
+      const existingArticle = await pool.query('SELECT id FROM articles WHERE slug = $1 AND deleted_at IS NULL', [slug]);
       if (existingArticle.rows.length > 0) {
         return res.status(409).json({ 
           error: { 
@@ -181,12 +194,17 @@ router.post('/',
         });
       }
 
+      // Auto-set published_at if status is 'published' and no published_at provided
+      const finalPublishedAt = (status === 'published' && !published_at) 
+        ? new Date().toISOString() 
+        : (published_at || null);
+
       const result = await pool.query(
         `INSERT INTO articles (
-          title, slug, content, excerpt, author, category, status, 
-          published_at, image_url, thumbnail_url, created_at, updated_at
+          title, slug, content, excerpt, author_name, category, status, 
+          published_at, featured_image_url, created_at, updated_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
         RETURNING *`,
         [
           title, 
@@ -196,13 +214,19 @@ router.post('/',
           author, 
           category || null, 
           status || 'draft',
-          published_at || null,
-          image_url || null,
-          thumbnail_url || null
+          finalPublishedAt,
+          image_url || null
         ]
       );
 
-      res.status(201).json(result.rows[0]);
+      // Map database fields to frontend expected fields
+      const article = {
+        ...result.rows[0],
+        author: result.rows[0].author_name,
+        image_url: result.rows[0].featured_image_url
+      };
+
+      res.status(201).json(article);
     } catch (error) {
       console.error('Error creating article:', error);
       res.status(500).json({ 
@@ -228,8 +252,7 @@ router.put('/:id',
     body('category').optional().trim(),
     body('status').optional().isIn(['draft', 'published']),
     body('published_at').optional().isISO8601(),
-    body('image_url').optional().trim(),
-    body('thumbnail_url').optional().trim()
+    body('image_url').optional().trim()
   ],
   async (req: AuthRequest, res: Response) => {
     try {
@@ -241,8 +264,8 @@ router.put('/:id',
       const { id } = req.params;
       const updates = req.body;
 
-      // Check if article exists
-      const existingArticle = await pool.query('SELECT id, created_at FROM articles WHERE id = $1', [id]);
+      // Check if article exists (excluding soft-deleted)
+      const existingArticle = await pool.query('SELECT id, created_at FROM articles WHERE id = $1 AND deleted_at IS NULL', [id]);
       if (existingArticle.rows.length === 0) {
         return res.status(404).json({ 
           error: { 
@@ -252,10 +275,10 @@ router.put('/:id',
         });
       }
 
-      // If slug is being updated, check for duplicates
+      // If slug is being updated, check for duplicates (excluding soft-deleted)
       if (updates.slug) {
         const duplicateSlug = await pool.query(
-          'SELECT id FROM articles WHERE slug = $1 AND id != $2', 
+          'SELECT id FROM articles WHERE slug = $1 AND id != $2 AND deleted_at IS NULL', 
           [updates.slug, id]
         );
         if (duplicateSlug.rows.length > 0) {
@@ -271,14 +294,40 @@ router.put('/:id',
       // Build update query dynamically
       const fields = Object.keys(updates);
       const values = Object.values(updates);
-      const setClause = fields.map((field, index) => `${field} = $${index + 1}`).join(', ');
+      
+      // Auto-set published_at if status is being changed to 'published' and no published_at provided
+      if (updates.status === 'published' && !updates.published_at) {
+        // Check if article already has a published_at
+        const currentArticle = await pool.query('SELECT published_at FROM articles WHERE id = $1', [id]);
+        if (currentArticle.rows.length > 0 && !currentArticle.rows[0].published_at) {
+          // Add published_at to updates if not already present
+          fields.push('published_at');
+          values.push(new Date().toISOString());
+        }
+      }
+      
+      // Map 'author' to 'author_name' and 'image_url' to 'featured_image_url'
+      const mappedFields = fields.map(field => {
+        if (field === 'author') return 'author_name';
+        if (field === 'image_url') return 'featured_image_url';
+        return field;
+      });
+      
+      const setClause = mappedFields.map((field, index) => `${field} = $${index + 1}`).join(', ');
 
       const result = await pool.query(
         `UPDATE articles SET ${setClause}, updated_at = NOW() WHERE id = $${fields.length + 1} RETURNING *`,
         [...values, id]
       );
 
-      res.json(result.rows[0]);
+      // Map database fields to frontend expected fields
+      const article = {
+        ...result.rows[0],
+        author: result.rows[0].author_name,
+        image_url: result.rows[0].featured_image_url
+      };
+
+      res.json(article);
     } catch (error) {
       console.error('Error updating article:', error);
       res.status(500).json({ 
@@ -292,15 +341,15 @@ router.put('/:id',
 );
 
 /**
- * DELETE /api/admin/articles/:id - Delete an article
+ * DELETE /api/admin/articles/:id - Soft delete an article
  */
 router.delete('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
 
-    // Check if article exists
+    // Check if article exists and get protection status
     const existingArticle = await pool.query(
-      'SELECT id, image_url, thumbnail_url FROM articles WHERE id = $1', 
+      'SELECT id, protected, featured_image_url FROM articles WHERE id = $1 AND deleted_at IS NULL', 
       [id]
     );
     if (existingArticle.rows.length === 0) {
@@ -312,17 +361,42 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // TODO: Delete associated files from S3 if they exist
-    // const article = existingArticle.rows[0];
-    // if (article.image_url) await deleteFromS3(article.image_url);
-    // if (article.thumbnail_url) await deleteFromS3(article.thumbnail_url);
+    const article = existingArticle.rows[0];
 
-    // Delete the article
-    await pool.query('DELETE FROM articles WHERE id = $1', [id]);
+    // Check if protected and user is not super admin
+    if (article.protected && req.user?.role !== 'administrator') {
+      logger.warn('Regular admin attempted to delete protected content', {
+        userId: req.user?.userId,
+        userEmail: req.user?.email,
+        contentType: 'article',
+        contentId: id
+      });
+      return res.status(403).json({ 
+        error: { 
+          message: 'Cannot delete protected content. Only super admins can delete protected items.', 
+          code: 'PROTECTED_CONTENT' 
+        } 
+      });
+    }
+
+    // Soft delete the article
+    await pool.query(
+      'UPDATE articles SET deleted_at = NOW(), deleted_by = $1, updated_at = NOW() WHERE id = $2',
+      [req.user?.userId, id]
+    );
+
+    // Audit log
+    logger.info('Content soft deleted', {
+      contentType: 'article',
+      contentId: id,
+      userId: req.user?.userId,
+      userEmail: req.user?.email,
+      protected: article.protected
+    });
 
     res.status(204).send();
   } catch (error) {
-    console.error('Error deleting article:', error);
+    logger.error('Error deleting article:', error);
     res.status(500).json({ 
       error: { 
         message: 'Failed to delete article', 
@@ -339,8 +413,8 @@ router.post('/:id/publish', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
 
-    // Check if article exists
-    const existingArticle = await pool.query('SELECT id FROM articles WHERE id = $1', [id]);
+    // Check if article exists (excluding soft-deleted)
+    const existingArticle = await pool.query('SELECT id FROM articles WHERE id = $1 AND deleted_at IS NULL', [id]);
     if (existingArticle.rows.length === 0) {
       return res.status(404).json({ 
         error: { 
@@ -358,7 +432,14 @@ router.post('/:id/publish', async (req: AuthRequest, res: Response) => {
       [id]
     );
 
-    res.json(result.rows[0]);
+    // Map database fields to frontend expected fields
+    const article = {
+      ...result.rows[0],
+      author: result.rows[0].author_name,
+      image_url: result.rows[0].featured_image_url
+    };
+
+    res.json(article);
   } catch (error) {
     console.error('Error publishing article:', error);
     res.status(500).json({ 
@@ -377,8 +458,8 @@ router.post('/:id/unpublish', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
 
-    // Check if article exists
-    const existingArticle = await pool.query('SELECT id FROM articles WHERE id = $1', [id]);
+    // Check if article exists (excluding soft-deleted)
+    const existingArticle = await pool.query('SELECT id FROM articles WHERE id = $1 AND deleted_at IS NULL', [id]);
     if (existingArticle.rows.length === 0) {
       return res.status(404).json({ 
         error: { 
@@ -396,7 +477,14 @@ router.post('/:id/unpublish', async (req: AuthRequest, res: Response) => {
       [id]
     );
 
-    res.json(result.rows[0]);
+    // Map database fields to frontend expected fields
+    const article = {
+      ...result.rows[0],
+      author: result.rows[0].author_name,
+      image_url: result.rows[0].featured_image_url
+    };
+
+    res.json(article);
   } catch (error) {
     console.error('Error unpublishing article:', error);
     res.status(500).json({ 
@@ -439,7 +527,7 @@ router.post('/bulk/publish',
       const result = await pool.query(
         `UPDATE articles 
          SET status = 'published', published_at = COALESCE(published_at, NOW()), updated_at = NOW() 
-         WHERE id IN (${placeholders})
+         WHERE id IN (${placeholders}) AND deleted_at IS NULL
          RETURNING id`,
         ids
       );
@@ -491,7 +579,7 @@ router.post('/bulk/unpublish',
       const result = await pool.query(
         `UPDATE articles 
          SET status = 'draft', updated_at = NOW() 
-         WHERE id IN (${placeholders})
+         WHERE id IN (${placeholders}) AND deleted_at IS NULL
          RETURNING id`,
         ids
       );

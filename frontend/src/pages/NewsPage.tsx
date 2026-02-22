@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getArticles } from '../services/api';
 import SEO from '../components/SEO';
 import './NewsPage.css';
 
@@ -8,12 +7,12 @@ interface Article {
   id: number;
   title: string;
   slug: string;
-  summary: string;
+  excerpt: string;  // Changed from summary
   content: string;
   category: string;
-  author: string;
+  author_name: string;  // Changed from author
   published_at: string;
-  image_url?: string;
+  featured_image_url?: string;  // Changed from image_url
 }
 
 const NewsPage: React.FC = () => {
@@ -22,15 +21,9 @@ const NewsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
-
-  const categories = [
-    { value: 'all', label: 'All' },
-    { value: 'civic_explainer', label: 'Civic Explainers' },
-    { value: 'constitutional_summary', label: 'Constitutional Summaries' },
-    { value: 'event_reflection', label: 'Event Reflections' },
-    { value: 'guest_essay', label: 'Guest Essays' },
-    { value: 'analysis', label: 'Analysis' },
-  ];
+  const [categories, setCategories] = useState<Array<{ value: string; label: string }>>([
+    { value: 'all', label: 'All' }
+  ]);
 
   useEffect(() => {
     fetchArticles();
@@ -43,14 +36,25 @@ const NewsPage: React.FC = () => {
   const fetchArticles = async () => {
     try {
       setLoading(true);
-      const data = await getArticles({ 
-        limit: 50, 
-        sort: 'published_at', 
-        order: sortOrder 
-      });
-      setArticles(Array.isArray(data) ? data : []);
+      
+      const response = await fetch(`/api/articles?limit=50&sort=published_at&order=${sortOrder}`);
+      const responseData = await response.json();
+      
+      const articlesArray = responseData.articles || [];
+      setArticles(articlesArray);
+      
+      // Build dynamic category list from articles
+      const uniqueCategories: string[] = Array.from(new Set(articlesArray.map((a: Article) => a.category)));
+      const categoryOptions: Array<{ value: string; label: string }> = [
+        { value: 'all', label: 'All' },
+        ...uniqueCategories.map((cat: string) => ({
+          value: cat,
+          label: cat.split('_').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+        }))
+      ];
+      setCategories(categoryOptions);
     } catch (error) {
-      console.error('Error fetching articles:', error);
+      console.error('[NewsPage] Error fetching articles:', error);
       setArticles([]);
     } finally {
       setLoading(false);
@@ -61,7 +65,8 @@ const NewsPage: React.FC = () => {
     if (selectedCategory === 'all') {
       setFilteredArticles(articles);
     } else {
-      setFilteredArticles(articles.filter(article => article.category === selectedCategory));
+      const filtered = articles.filter(article => article.category === selectedCategory);
+      setFilteredArticles(filtered);
     }
   };
 
@@ -99,17 +104,17 @@ const NewsPage: React.FC = () => {
               <section className="featured-section">
                 <div className="featured-label">Featured Article</div>
                 <Link to={`/news/${featuredArticle.slug}`} className="featured-article">
-                  {featuredArticle.image_url && (
+                  {featuredArticle.featured_image_url && (
                     <div className="featured-image">
-                      <img src={featuredArticle.image_url} alt={featuredArticle.title} />
+                      <img src={featuredArticle.featured_image_url} alt={featuredArticle.title} />
                     </div>
                   )}
                   <div className="featured-content">
                     <span className="article-category">{categories.find(c => c.value === featuredArticle.category)?.label || featuredArticle.category}</span>
                     <h2>{featuredArticle.title}</h2>
-                    <p className="article-summary">{featuredArticle.summary}</p>
+                    <p className="article-summary">{featuredArticle.excerpt}</p>
                     <div className="article-meta">
-                      <span className="author">By {featuredArticle.author}</span>
+                      <span className="author">By {featuredArticle.author_name}</span>
                       <span className="date">{formatDate(featuredArticle.published_at)}</span>
                     </div>
                   </div>
@@ -160,17 +165,17 @@ const NewsPage: React.FC = () => {
                     to={`/news/${article.slug}`} 
                     className="article-card"
                   >
-                    {article.image_url && (
+                    {article.featured_image_url && (
                       <div className="article-image">
-                        <img src={article.image_url} alt={article.title} />
+                        <img src={article.featured_image_url} alt={article.title} />
                       </div>
                     )}
                     <div className="article-content">
                       <span className="article-category">{categories.find(c => c.value === article.category)?.label || article.category}</span>
                       <h3>{article.title}</h3>
-                      <p className="article-summary">{article.summary}</p>
+                      <p className="article-summary">{article.excerpt}</p>
                       <div className="article-meta">
-                        <span className="author">By {article.author}</span>
+                        <span className="author">By {article.author_name}</span>
                         <span className="date">{formatDate(article.published_at)}</span>
                       </div>
                     </div>

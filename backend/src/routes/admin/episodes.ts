@@ -2,6 +2,7 @@ import express, { Response } from 'express';
 import pool from '../../db/connection';
 import { authMiddleware, requireRole, AuthRequest } from '../../middleware/auth';
 import { body, validationResult } from 'express-validator';
+import logger from '../../utils/logger';
 
 const router = express.Router();
 
@@ -27,7 +28,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
       SELECT e.*, s.title as show_title 
       FROM episodes e 
       LEFT JOIN shows s ON e.show_id = s.id 
-      WHERE 1=1
+      WHERE e.deleted_at IS NULL AND (s.deleted_at IS NULL OR s.id IS NULL)
     `;
     const params: any[] = [];
     let paramCount = 1;
@@ -59,7 +60,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     const result = await pool.query(query, params);
 
     // Get total count with same filters
-    let countQuery = 'SELECT COUNT(*) FROM episodes e WHERE 1=1';
+    let countQuery = 'SELECT COUNT(*) FROM episodes e WHERE e.deleted_at IS NULL';
     const countParams: any[] = [];
     let countParamCount = 1;
 
@@ -77,9 +78,15 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 
     const countResult = await pool.query(countQuery, countParams);
 
+    // Map database fields to frontend expected fields
+    const episodes = result.rows.map(row => ({
+      ...row,
+      duration: row.duration_seconds ? `${Math.floor(row.duration_seconds / 60)}:${String(row.duration_seconds % 60).padStart(2, '0')}` : undefined
+    }));
+
     res.json({
-      episodes: result.rows,
-      count: result.rows.length,
+      episodes,
+      count: episodes.length,
       total: parseInt(countResult.rows[0].count),
       limit: parseInt(limit as string),
       offset: parseInt(offset as string)
@@ -106,7 +113,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
       `SELECT e.*, s.title as show_title 
        FROM episodes e 
        LEFT JOIN shows s ON e.show_id = s.id 
-       WHERE e.id = $1`,
+       WHERE e.id = $1 AND e.deleted_at IS NULL AND (s.deleted_at IS NULL OR s.id IS NULL)`,
       [id]
     );
 
@@ -119,7 +126,13 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
       });
     }
 
-    res.json(result.rows[0]);
+    // Map database fields to frontend expected fields
+    const episode = {
+      ...result.rows[0],
+      duration: result.rows[0].duration_seconds ? `${Math.floor(result.rows[0].duration_seconds / 60)}:${String(result.rows[0].duration_seconds % 60).padStart(2, '0')}` : undefined
+    };
+
+    res.json(episode);
   } catch (error) {
     console.error('Error fetching episode:', error);
     res.status(500).json({
@@ -139,11 +152,9 @@ router.post('/',
     body('show_id').isInt().withMessage('Valid show ID is required'),
     body('title').trim().notEmpty().withMessage('Title is required'),
     body('description').trim().notEmpty().withMessage('Description is required'),
-    body('episode_number').optional().isInt({ min: 1 }).withMessage('Episode number must be a positive integer'),
     body('audio_url').trim().notEmpty().withMessage('Audio URL is required'),
-    body('duration').optional().isInt({ min: 0 }).withMessage('Duration must be a positive integer'),
-    body('published_at').optional().isISO8601().withMessage('Invalid date format'),
-    body('thumbnail_url').optional().trim()
+    body('duration_seconds').optional().isInt({ min: 0 }).withMessage('Duration must be in seconds'),
+    body('published_at').optional().isISO8601().withMessage('Invalid date format')
   ],
   async (req: AuthRequest, res: Response) => {
     try {
@@ -156,15 +167,13 @@ router.post('/',
         show_id,
         title, 
         description, 
-        episode_number,
         audio_url,
-        duration,
-        published_at,
-        thumbnail_url
+        duration_seconds,
+        published_at
       } = req.body;
 
-      // Check if show exists
-      const showExists = await pool.query('SELECT id FROM shows WHERE id = $1', [show_id]);
+      // Check if show exists (excluding soft-deleted)
+      const showExists = await pool.query('SELECT id FROM shows WHERE id = $1 AND deleted_at IS NULL', [show_id]);
       if (showExists.rows.length === 0) {
         return res.status(404).json({ 
           error: { 
@@ -174,26 +183,34 @@ router.post('/',
         });
       }
 
+      // Generate slug from title
+      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
       const result = await pool.query(
         `INSERT INTO episodes (
-          show_id, title, description, episode_number, audio_url, 
-          duration, published_at, thumbnail_url, created_at, updated_at
+          show_id, title, slug, description, audio_url, 
+          duration_seconds, published_at, created_at, updated_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
         RETURNING *`,
         [
           show_id,
           title, 
+          slug,
           description, 
-          episode_number || null,
           audio_url,
-          duration || null,
-          published_at || null,
-          thumbnail_url || null
+          duration_seconds || null,
+          published_at || null
         ]
       );
 
-      res.status(201).json(result.rows[0]);
+      // Map database fields to frontend expected fields
+      const episode = {
+        ...result.rows[0],
+        duration: result.rows[0].duration_seconds ? `${Math.floor(result.rows[0].duration_seconds / 60)}:${String(result.rows[0].duration_seconds % 60).padStart(2, '0')}` : undefined
+      };
+
+      res.status(201).json(episode);
     } catch (error) {
       console.error('Error creating episode:', error);
       res.status(500).json({ 
@@ -214,11 +231,9 @@ router.put('/:id',
     body('show_id').optional().isInt(),
     body('title').optional().trim().notEmpty(),
     body('description').optional().trim().notEmpty(),
-    body('episode_number').optional().isInt({ min: 1 }),
     body('audio_url').optional().trim().notEmpty(),
-    body('duration').optional().isInt({ min: 0 }),
-    body('published_at').optional().isISO8601(),
-    body('thumbnail_url').optional().trim()
+    body('duration_seconds').optional().isInt({ min: 0 }),
+    body('published_at').optional().isISO8601()
   ],
   async (req: AuthRequest, res: Response) => {
     try {
@@ -230,9 +245,9 @@ router.put('/:id',
       const { id } = req.params;
       const updates = req.body;
 
-      // Check if episode exists
+      // Check if episode exists (excluding soft-deleted)
       const existingEpisode = await pool.query(
-        'SELECT id, audio_url, thumbnail_url FROM episodes WHERE id = $1', 
+        'SELECT id, audio_url, thumbnail_url FROM episodes WHERE id = $1 AND deleted_at IS NULL', 
         [id]
       );
       if (existingEpisode.rows.length === 0) {
@@ -244,9 +259,9 @@ router.put('/:id',
         });
       }
 
-      // If show_id is being updated, check if new show exists
+      // If show_id is being updated, check if new show exists (excluding soft-deleted)
       if (updates.show_id) {
-        const showExists = await pool.query('SELECT id FROM shows WHERE id = $1', [updates.show_id]);
+        const showExists = await pool.query('SELECT id FROM shows WHERE id = $1 AND deleted_at IS NULL', [updates.show_id]);
         if (showExists.rows.length === 0) {
           return res.status(404).json({ 
             error: { 
@@ -255,6 +270,11 @@ router.put('/:id',
             } 
           });
         }
+      }
+
+      // If title is being updated, regenerate slug
+      if (updates.title) {
+        updates.slug = updates.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       }
 
       // If audio_url is being updated, we should delete the old file from S3
@@ -273,7 +293,13 @@ router.put('/:id',
         [...values, id]
       );
 
-      res.json(result.rows[0]);
+
+      // Map database fields to frontend expected fields
+      const episode = {
+        ...result.rows[0],
+        duration: result.rows[0].duration_seconds ? `${Math.floor(result.rows[0].duration_seconds / 60)}:${String(result.rows[0].duration_seconds % 60).padStart(2, "0")}` : undefined
+      };
+      res.json(episode);
     } catch (error) {
       console.error('Error updating episode:', error);
       res.status(500).json({ 
@@ -287,15 +313,15 @@ router.put('/:id',
 );
 
 /**
- * DELETE /api/admin/episodes/:id - Delete an episode
+ * DELETE /api/admin/episodes/:id - Soft delete an episode
  */
 router.delete('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
 
-    // Check if episode exists
+    // Check if episode exists and get protection status
     const existingEpisode = await pool.query(
-      'SELECT id, audio_url, thumbnail_url FROM episodes WHERE id = $1', 
+      'SELECT id, protected, audio_url FROM episodes WHERE id = $1 AND deleted_at IS NULL', 
       [id]
     );
     if (existingEpisode.rows.length === 0) {
@@ -307,17 +333,42 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // TODO: Delete associated files from S3
-    // const episode = existingEpisode.rows[0];
-    // if (episode.audio_url) await deleteFromS3(episode.audio_url);
-    // if (episode.thumbnail_url) await deleteFromS3(episode.thumbnail_url);
+    const episode = existingEpisode.rows[0];
 
-    // Delete the episode
-    await pool.query('DELETE FROM episodes WHERE id = $1', [id]);
+    // Check if protected and user is not super admin
+    if (episode.protected && req.user?.role !== 'administrator') {
+      logger.warn('Regular admin attempted to delete protected content', {
+        userId: req.user?.userId,
+        userEmail: req.user?.email,
+        contentType: 'episode',
+        contentId: id
+      });
+      return res.status(403).json({ 
+        error: { 
+          message: 'Cannot delete protected content. Only super admins can delete protected items.', 
+          code: 'PROTECTED_CONTENT' 
+        } 
+      });
+    }
+
+    // Soft delete the episode
+    await pool.query(
+      'UPDATE episodes SET deleted_at = NOW(), deleted_by = $1, updated_at = NOW() WHERE id = $2',
+      [req.user?.userId, id]
+    );
+
+    // Audit log
+    logger.info('Content soft deleted', {
+      contentType: 'episode',
+      contentId: id,
+      userId: req.user?.userId,
+      userEmail: req.user?.email,
+      protected: episode.protected
+    });
 
     res.status(204).send();
   } catch (error) {
-    console.error('Error deleting episode:', error);
+    logger.error('Error deleting episode:', error);
     res.status(500).json({ 
       error: { 
         message: 'Failed to delete episode', 

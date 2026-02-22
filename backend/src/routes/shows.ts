@@ -11,7 +11,7 @@ router.get('/', async (req: Request, res: Response) => {
   try {
     const { category, is_active } = req.query;
     
-    let query = 'SELECT * FROM shows WHERE 1=1';
+    let query = 'SELECT * FROM shows WHERE deleted_at IS NULL';
     const params: any[] = [];
     let paramCount = 1;
 
@@ -55,7 +55,7 @@ router.get('/:slug', async (req: Request, res: Response) => {
     const { slug } = req.params;
 
     const result = await pool.query(
-      'SELECT * FROM shows WHERE slug = $1',
+      'SELECT * FROM shows WHERE slug = $1 AND deleted_at IS NULL',
       [slug]
     );
 
@@ -91,7 +91,7 @@ router.get('/:slug/episodes', async (req: Request, res: Response) => {
 
     // First, get the show ID
     const showResult = await pool.query(
-      'SELECT id FROM shows WHERE slug = $1',
+      'SELECT id FROM shows WHERE slug = $1 AND deleted_at IS NULL',
       [slug]
     );
 
@@ -109,7 +109,7 @@ router.get('/:slug/episodes', async (req: Request, res: Response) => {
     // Get episodes for this show
     const episodesResult = await pool.query(
       `SELECT * FROM episodes 
-       WHERE show_id = $1 
+       WHERE show_id = $1 AND deleted_at IS NULL
        ORDER BY published_at DESC 
        LIMIT $2 OFFSET $3`,
       [showId, parseInt(limit as string), parseInt(offset as string)]
@@ -117,7 +117,7 @@ router.get('/:slug/episodes', async (req: Request, res: Response) => {
 
     // Get total count
     const countResult = await pool.query(
-      'SELECT COUNT(*) FROM episodes WHERE show_id = $1',
+      'SELECT COUNT(*) FROM episodes WHERE show_id = $1 AND deleted_at IS NULL',
       [showId]
     );
 
