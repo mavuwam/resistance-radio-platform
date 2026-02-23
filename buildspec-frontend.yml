@@ -35,6 +35,28 @@ phases:
           --exclude "*" \
           --include "*.html" \
           --cache-control "public, max-age=0, must-revalidate"
+      - echo "Checking CloudFront origin configuration..."
+      - |
+        CURRENT_ORIGIN=$(aws cloudfront get-distribution-config --id EYKP4STY3RIHX --query 'DistributionConfig.Origins.Items[0].DomainName' --output text)
+        EXPECTED_ORIGIN="resistance-radio-website-dev-734110488556.s3.us-east-1.amazonaws.com"
+        if [ "$CURRENT_ORIGIN" != "$EXPECTED_ORIGIN" ]; then
+          echo "CloudFront origin is incorrect. Current: $CURRENT_ORIGIN, Expected: $EXPECTED_ORIGIN"
+          echo "Fixing CloudFront origin..."
+          aws cloudfront get-distribution-config --id EYKP4STY3RIHX --output json > /tmp/cf-config.json
+          ETAG=$(cat /tmp/cf-config.json | jq -r '.ETag')
+          cat /tmp/cf-config.json | jq --arg bucket "$EXPECTED_ORIGIN" \
+            '.DistributionConfig.Origins.Items[0].DomainName = $bucket | 
+             .DistributionConfig.Origins.Items[0].S3OriginConfig = {"OriginAccessIdentity": ""} |
+             del(.DistributionConfig.Origins.Items[0].CustomOriginConfig) |
+             .DistributionConfig' > /tmp/cf-config-updated.json
+          aws cloudfront update-distribution \
+            --id EYKP4STY3RIHX \
+            --distribution-config file:///tmp/cf-config-updated.json \
+            --if-match $ETAG
+          echo "✓ CloudFront origin fixed"
+        else
+          echo "✓ CloudFront origin is correct"
+        fi
       - echo "Invalidating CloudFront cache..."
       - aws cloudfront create-invalidation --distribution-id EYKP4STY3RIHX --paths "/*"
       - echo "Frontend deployment completed"
