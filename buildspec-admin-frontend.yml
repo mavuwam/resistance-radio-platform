@@ -43,9 +43,9 @@ phases:
 artifacts:
   files:
     - '**/*'
-  base-directory: admin-frontend/dist
+  base-directory: dist
   name: admin-frontend-build
 
 cache:
   paths:
-    - 'admin-frontend/node_modules/**/*'
+    - 'node_modules/**/*'
