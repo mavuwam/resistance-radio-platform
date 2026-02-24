@@ -5,8 +5,7 @@ phases:
     runtime-versions:
       nodejs: 18
     commands:
-      - echo "Installing admin frontend dependencies..."
-      - cd admin-frontend
+      - echo "Installing workspace dependencies..."
       - npm ci
   
   pre_build:
@@ -19,12 +18,14 @@ phases:
   build:
     commands:
       - echo "Building admin frontend application..."
+      - cd admin-frontend
       - npm run build
       - echo "Build completed successfully"
   
   post_build:
     commands:
       - echo "Syncing to S3..."
+      - cd admin-frontend
       - |
         aws s3 sync dist/ s3://${S3_BUCKET}/ \
           --delete \
@@ -43,9 +44,11 @@ phases:
 artifacts:
   files:
     - '**/*'
-  base-directory: dist
+  base-directory: admin-frontend/dist
   name: admin-frontend-build
 
 cache:
   paths:
     - 'node_modules/**/*'
+    - 'admin-frontend/node_modules/**/*'
+    - 'shared/node_modules/**/*'

@@ -20,6 +20,8 @@ phases:
       - echo "NPM version:" && npm --version
       - echo "SAM version:" && sam --version
       - cd ..
+      - echo "Validating SAM template..."
+      - sam validate
   
   build:
     commands:
@@ -36,6 +38,7 @@ phases:
           --no-fail-on-empty-changeset \
           --stack-name resistance-radio-backend-dev \
           --capabilities CAPABILITY_IAM \
+          --resolve-s3 \
           --parameter-overrides \
             Environment=dev \
             DBHost=$DB_HOST \
@@ -43,7 +46,7 @@ phases:
             DBUser=$DB_USER \
             DBPassword=$DB_PASSWORD \
             JWTSecret=$JWT_SECRET \
-            FrontendUrl=$FRONTEND_URL \
+            FrontendURL=$FRONTEND_URL \
             S3BucketName=$S3_BUCKET_NAME
       - echo "Lambda deployment completed"
       - echo "Getting API Gateway URL..."
