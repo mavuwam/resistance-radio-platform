@@ -25,7 +25,6 @@ phases:
   post_build:
     commands:
       - echo "Syncing to S3..."
-      - cd admin-frontend
       - |
         aws s3 sync dist/ s3://${S3_BUCKET}/ \
           --delete \

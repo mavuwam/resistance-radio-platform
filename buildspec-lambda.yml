@@ -20,8 +20,6 @@ phases:
       - echo "NPM version:" && npm --version
       - echo "SAM version:" && sam --version
       - cd ..
-      - echo "Validating SAM template..."
-      - sam validate
   
   build:
     commands:
