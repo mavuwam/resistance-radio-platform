@@ -20,7 +20,7 @@ const api: AxiosInstance = axios.create({
 
 // Request interceptor
 api.interceptors.request.use(
-  (config) => {
+  (config: any) => {
     // Add auth token from localStorage
     const token = localStorage.getItem('auth_token');
     if (token) {
@@ -38,14 +38,14 @@ api.interceptors.request.use(
     
     return config;
   },
-  (error) => {
+  (error: any) => {
     return Promise.reject(error);
   }
 );
 
 // Response interceptor
 api.interceptors.response.use(
-  (response) => {
+  (response: any) => {
     // Store CSRF token if provided
     const csrfToken = response.headers['x-csrf-token'];
     if (csrfToken) {
@@ -53,7 +53,7 @@ api.interceptors.response.use(
     }
     return response;
   },
-  (error) => {
+  (error: any) => {
     if (error.response?.status === 401) {
       // Unauthorized - clear auth data
       localStorage.removeItem('auth_token');
