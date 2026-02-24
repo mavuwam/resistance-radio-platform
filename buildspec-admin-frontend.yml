@@ -5,8 +5,8 @@ phases:
     runtime-versions:
       nodejs: 18
     commands:
-      - echo "Installing frontend dependencies..."
-      - cd frontend
+      - echo "Installing admin frontend dependencies..."
+      - cd admin-frontend
       - npm ci
   
   pre_build:
@@ -14,10 +14,11 @@ phases:
       - echo "Running pre-build checks..."
       - echo "Node version:" && node --version
       - echo "NPM version:" && npm --version
+      - echo "API URL:" && echo $VITE_API_URL
   
   build:
     commands:
-      - echo "Building frontend application..."
+      - echo "Building admin frontend application..."
       - npm run build
       - echo "Build completed successfully"
   
@@ -37,14 +38,14 @@ phases:
           --cache-control "public, max-age=0, must-revalidate"
       - echo "Invalidating CloudFront cache..."
       - aws cloudfront create-invalidation --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} --paths "/*"
-      - echo "Frontend deployment completed"
+      - echo "Admin frontend deployment completed"
 
 artifacts:
   files:
     - '**/*'
-  base-directory: frontend/dist
-  name: frontend-build
+  base-directory: admin-frontend/dist
+  name: admin-frontend-build
 
 cache:
   paths:
-    - 'frontend/node_modules/**/*'
+    - 'admin-frontend/node_modules/**/*'

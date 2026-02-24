@@ -49,11 +49,21 @@ Parameters:
   CloudFrontDistributionId:
     Type: String
     Default: EYKP4STY3RIHX
-    Description: CloudFront distribution ID
+    Description: CloudFront distribution ID for main frontend
+    
+  AdminCloudFrontDistributionId:
+    Type: String
+    Default: E2HKDMNDC8X5HT
+    Description: CloudFront distribution ID for admin frontend
+    
+  S3BucketAdmin:
+    Type: String
+    Default: zimbabwe-voice-admin
+    Description: S3 bucket for admin frontend hosting
     
   ViteApiUrl:
     Type: String
-    Default: https://a8tj7xh4qi.execute-api.us-east-1.amazonaws.com/dev
+    Default: https://a8tj7xh4qi.execute-api.us-east-1.amazonaws.com/dev/api
     Description: Backend API URL for frontend build (Lambda)
   
   Environment:
@@ -157,6 +167,7 @@ Resources:
                   - codebuild:StartBuild
                 Resource:
                   - !GetAtt FrontendBuildProject.Arn
+                  - !GetAtt AdminFrontendBuildProject.Arn
                   - !GetAtt BackendBuildProject.Arn
 
   # Frontend CodeBuild Project
@@ -186,6 +197,34 @@ Resources:
       Cache:
         Type: S3
         Location: !Sub '${ArtifactBucket}/build-cache'
+
+  # Admin Frontend CodeBuild Project
+  AdminFrontendBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: ResistanceRadio-AdminFrontend-Build
+      Description: Build admin frontend React application
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:7.0
+        EnvironmentVariables:
+          - Name: VITE_API_URL
+            Value: !Ref ViteApiUrl
+          - Name: S3_BUCKET
+            Value: !Ref S3BucketAdmin
+          - Name: CLOUDFRONT_DISTRIBUTION_ID
+            Value: !Ref AdminCloudFrontDistributionId
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec-admin-frontend.yml
+      TimeoutInMinutes: 15
+      Cache:
+        Type: S3
+        Location: !Sub '${ArtifactBucket}/build-cache-admin'
 
   # Backend CodeBuild Project (Lambda Deployment)
   BackendBuildProject:
@@ -274,6 +313,20 @@ Resources:
                 - Name: FrontendBuildOutput
               RunOrder: 1
             
+            - Name: BuildAdminFrontend
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref AdminFrontendBuildProject
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: AdminFrontendBuildOutput
+              RunOrder: 1
+            
             - Name: BuildBackend
               ActionTypeId:
                 Category: Build
@@ -320,6 +373,10 @@ Outputs:
   FrontendBuildProjectName:
     Description: Frontend CodeBuild project name
     Value: !Ref FrontendBuildProject
+    
+  AdminFrontendBuildProjectName:
+    Description: Admin Frontend CodeBuild project name
+    Value: !Ref AdminFrontendBuildProject
     
   BackendBuildProjectName:
     Description: Backend CodeBuild project name

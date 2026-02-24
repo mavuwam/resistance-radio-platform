@@ -6,13 +6,12 @@ phases:
       nodejs: 18
       python: 3.11
     commands:
-      - echo "Installing AWS SAM CLI..."
-      - pip3 install aws-sam-cli
+      - echo "Installing SAM CLI..."
+      - pip3 install --upgrade aws-sam-cli
       - sam --version
       - echo "Installing backend dependencies..."
       - cd backend
       - npm ci
-      - cd ..
   
   pre_build:
     commands:
@@ -20,34 +19,48 @@ phases:
       - echo "Node version:" && node --version
       - echo "NPM version:" && npm --version
       - echo "SAM version:" && sam --version
+      - cd ..
   
   build:
     commands:
-      - echo "Building backend TypeScript..."
-      - cd backend
-      - npm run build
-      - cd ..
-      - echo "Building SAM application..."
+      - echo "Building Lambda function with SAM..."
       - sam build --use-container
       - echo "Build completed successfully"
   
   post_build:
     commands:
       - echo "Deploying to Lambda..."
-      - sam deploy --stack-name ResistanceRadio-dev --no-confirm-changeset --no-fail-on-empty-changeset --capabilities CAPABILITY_IAM --parameter-overrides Environment=dev DBHost=$DB_HOST DBName=$DB_NAME DBUser=$DB_USER DBPassword=$DB_PASSWORD JWTSecret=$JWT_SECRET FrontendURL=$FRONTEND_URL S3BucketName=$S3_BUCKET_NAME --region us-east-1
-      - echo "Getting API endpoint..."
-      - API_ENDPOINT=$(aws cloudformation describe-stacks --stack-name ResistanceRadio-dev --query 'Stacks[0].Outputs[?OutputKey==`ApiEndpoint`].OutputValue' --output text --region us-east-1)
-      - echo "API Endpoint is $API_ENDPOINT"
-      - echo "Lambda deployment completed successfully"
+      - |
+        sam deploy \
+          --no-confirm-changeset \
+          --no-fail-on-empty-changeset \
+          --stack-name resistance-radio-backend-dev \
+          --capabilities CAPABILITY_IAM \
+          --parameter-overrides \
+            Environment=dev \
+            DBHost=$DB_HOST \
+            DBName=$DB_NAME \
+            DBUser=$DB_USER \
+            DBPassword=$DB_PASSWORD \
+            JWTSecret=$JWT_SECRET \
+            FrontendUrl=$FRONTEND_URL \
+            S3BucketName=$S3_BUCKET_NAME
+      - echo "Lambda deployment completed"
+      - echo "Getting API Gateway URL..."
+      - |
+        API_URL=$(aws cloudformation describe-stacks \
+          --stack-name resistance-radio-backend-dev \
+          --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' \
+          --output text)
+        echo "API URL: $API_URL"
 
 artifacts:
   files:
-    - template.yaml
-    - samconfig.toml
-    - .aws-sam/**/*
+    - '**/*'
+  base-directory: .aws-sam/build
   name: lambda-build
 
 cache:
   paths:
     - 'backend/node_modules/**/*'
-    - '.aws-sam/**/*'
+    - '.aws-sam/cache/**/*'
